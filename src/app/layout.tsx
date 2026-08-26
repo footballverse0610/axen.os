@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Axen OS",
-  description: "Axen Gear を運営するためのブランド経営OS",
+  title: "Founder",
+  description: "アイデアを、実際のビジネスに変えるためのAIビジネス支援アプリ",
 };
 
 export const viewport: Viewport = {
