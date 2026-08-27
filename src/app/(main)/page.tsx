@@ -227,7 +227,7 @@ export default async function DashboardPage() {
       </section>
 
       <section>
-        <SectionHeader title="目標" href="/finance" />
+        <SectionHeader title="目標" href="/goals" />
         {goal ? (
           <Card className="flex flex-col gap-3">
             <div className="flex items-center justify-between gap-3">
