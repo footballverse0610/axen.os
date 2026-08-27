@@ -1,17 +1,17 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import type { User } from "@supabase/supabase-js";
 import { getSupabaseEnv } from "./env";
 
 /**
  * src/proxy.ts から呼び出すセッション更新処理。
  * 期限切れが近いアクセストークンをリフレッシュし、更新後のCookieを
- * レスポンスに反映する。Supabase Auth導入後、認証必須ページのリダイレクト
- * もここに追加していく想定（現時点ではセッション維持のみ）。
- *
- * 呼び出し側（proxy.ts）が環境変数の有無を先に確認する想定だが、
- * 念のためこの関数自体もgetSupabaseEnv()経由で検証する。
+ * レスポンスに反映する。あわせて現在の認証ユーザーを返し、
+ * proxy.ts側でルート保護のリダイレクト判定に使う。
  */
-export async function updateSession(request: NextRequest) {
+export async function updateSession(
+  request: NextRequest,
+): Promise<{ response: NextResponse; user: User | null }> {
   const { url, anonKey } = getSupabaseEnv();
 
   let supabaseResponse = NextResponse.next({ request });
@@ -34,8 +34,9 @@ export async function updateSession(request: NextRequest) {
   });
 
   // getUser()はSupabaseサーバーに問い合わせて検証するため、getSession()より安全。
-  // 戻り値は現時点では未使用だが、呼び出すこと自体がトークンのリフレッシュに必要。
-  await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  return supabaseResponse;
+  return { response: supabaseResponse, user };
 }

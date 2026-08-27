@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Founder",
+  title: "起業しよ。",
   description: "アイデアを、実際のビジネスに変えるためのAIビジネス支援アプリ",
 };
 

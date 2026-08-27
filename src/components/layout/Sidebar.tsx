@@ -11,7 +11,7 @@ export function Sidebar() {
     <aside className="hidden w-60 shrink-0 border-r border-border md:flex md:flex-col md:gap-1 md:px-3 md:py-6">
       <div className="mb-6 px-3">
         <span className="text-lg font-semibold tracking-tight text-foreground">
-          Founder
+          起業しよ。
         </span>
       </div>
       <nav aria-label="主要ナビゲーション" className="flex flex-col gap-1">
