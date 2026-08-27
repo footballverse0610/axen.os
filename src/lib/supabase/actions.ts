@@ -3,10 +3,33 @@
 import { redirect } from "next/navigation";
 import { createClient } from "./server";
 import { translateAuthError } from "./error-messages";
+import { getCurrentUser } from "./get-current-user";
+import type { BusinessStage } from "./types";
 
 export interface AuthActionState {
   error: string | null;
   success?: string | null;
+}
+
+/**
+ * profilesに最低限のレコード(id = auth.users.id)が存在することを保証する。
+ * 既に存在する場合は何もしない(upsert + ignoreDuplicates)。
+ *
+ * サインアップ直後にセッションが無い(メール確認待ち)ケースでは、この時点では
+ * auth.uid()が定まらずRLSにより書き込めないため、ここでは呼ばない。
+ * 代わりに、実際にセッションが確立するタイミング(signup成功時にセッションが
+ * 即発行される場合、またはlogin成功時)でこの関数を呼び、確実にカバーする。
+ * 失敗してもログイン/登録自体は妨げない(ベストエフォート)。
+ */
+async function ensureProfileExists(userId: string) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("profiles")
+    .upsert({ id: userId }, { onConflict: "id", ignoreDuplicates: true });
+
+  if (error) {
+    console.error("ensureProfileExists failed", error);
+  }
 }
 
 export async function login(
@@ -24,10 +47,14 @@ export async function login(
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
     return { error: translateAuthError(error) };
+  }
+
+  if (data.user) {
+    await ensureProfileExists(data.user.id);
   }
 
   redirect("/");
@@ -61,15 +88,15 @@ export async function signup(
     return { error: translateAuthError(error) };
   }
 
-  // TODO(次Phase): サインアップ成功時、data.user.id を使って profiles テーブルに
-  // 初期レコードを作成する(businesses等の作成フローとあわせて実装する)。
-  // 現時点ではDB書き込みは行わない。
-
-  if (data.session) {
-    // メール確認が無効な設定の場合、この時点で既にログイン済みになる。
+  if (data.session && data.user) {
+    // メール確認が無効な設定の場合、この時点で既にログイン済み(auth.uid()が
+    // 定まる)ため、ここでprofilesを作成できる。
+    await ensureProfileExists(data.user.id);
     redirect("/");
   }
 
+  // メール確認が有効な設定の場合はセッションがまだ無い。profilesの作成は、
+  // 実際にログインしてセッションが確立した時点(login内)で行う。
   return {
     error: null,
     success:
@@ -81,4 +108,69 @@ export async function logout(): Promise<void> {
   const supabase = await createClient();
   await supabase.auth.signOut();
   redirect("/login");
+}
+
+export interface BusinessActionState {
+  error: string | null;
+}
+
+const BUSINESS_STAGES: BusinessStage[] = ["idea", "preparing", "operating", "paused"];
+
+const MAX_NAME_LENGTH = 100;
+const MAX_ONE_LINER_LENGTH = 200;
+const MAX_INDUSTRY_LENGTH = 50;
+
+/**
+ * 初回設定(オンボーディング)でユーザーの最初の事業を作成する。
+ * user_idはクライアントからの入力を一切信用せず、必ずgetCurrentUser()の
+ * 結果(サーバー側でCookieのセッションから検証した値)を使用する。
+ */
+export async function createBusiness(
+  _prevState: BusinessActionState,
+  formData: FormData,
+): Promise<BusinessActionState> {
+  const user = await getCurrentUser();
+  if (!user) {
+    redirect("/login");
+  }
+
+  const name = String(formData.get("name") ?? "").trim();
+  const oneLiner = String(formData.get("oneLiner") ?? "").trim();
+  const industry = String(formData.get("industry") ?? "").trim();
+  const stage = String(formData.get("stage") ?? "");
+
+  if (!name) {
+    return { error: "事業名を入力してください。" };
+  }
+  if (name.length > MAX_NAME_LENGTH) {
+    return { error: `事業名は${MAX_NAME_LENGTH}文字以内で入力してください。` };
+  }
+  if (oneLiner.length > MAX_ONE_LINER_LENGTH) {
+    return { error: `事業内容は${MAX_ONE_LINER_LENGTH}文字以内で入力してください。` };
+  }
+  if (industry.length > MAX_INDUSTRY_LENGTH) {
+    return { error: `業種は${MAX_INDUSTRY_LENGTH}文字以内で入力してください。` };
+  }
+  if (!BUSINESS_STAGES.includes(stage as BusinessStage)) {
+    return { error: "事業ステージを選択してください。" };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("businesses").insert({
+    user_id: user.id,
+    name,
+    one_liner: oneLiner || null,
+    industry: industry || null,
+    stage: stage as BusinessStage,
+  });
+
+  if (error) {
+    if (error.code === "23505") {
+      return { error: "同じ名前の事業が既に存在します。別の名前を入力してください。" };
+    }
+    console.error("createBusiness failed", error);
+    return { error: "事業の作成に失敗しました。時間をおいて再度お試しください。" };
+  }
+
+  redirect("/");
 }

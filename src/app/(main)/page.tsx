@@ -1,38 +1,96 @@
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowDownRight, ArrowRight, ArrowUpRight, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/Badge";
 import { Bar } from "@/components/ui/Bar";
 import { Card } from "@/components/ui/Card";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { StatCard } from "@/components/ui/StatCard";
-import { calcProfit, formatYen } from "@/lib/finance";
-import { mockIdeas, mockTasks, mockTransactions } from "@/lib/mock-data";
+import { formatYen } from "@/lib/finance";
 import { stageLabel, stageTone } from "@/lib/idea-stage";
 import { priorityTone } from "@/lib/task-priority";
+import { getDashboardData } from "@/lib/supabase/dashboard";
+import { calcBusinessSummary, calcGoalProgress } from "@/lib/supabase/finance";
 
-export default function DashboardPage() {
-  const { sales, expenses, profit, margin } = calcProfit(mockTransactions);
-  const openTasks = mockTasks.filter((t) => !t.done);
-  const topTasks = [...openTasks]
-    .sort((a, b) => (a.priority === "HIGH" ? -1 : b.priority === "HIGH" ? 1 : 0))
-    .slice(0, 3);
-  const topIdeas = mockIdeas.slice(0, 2);
-  const maxFlow = Math.max(sales, expenses, 1);
+interface RecentTransaction {
+  id: string;
+  kind: "sale" | "expense";
+  label: string;
+  category: string;
+  amount: number;
+  date: string;
+}
+
+export default async function DashboardPage() {
+  const data = await getDashboardData();
+
+  if (!data) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-2 py-24 text-center">
+        <p className="text-sm font-medium text-foreground">データを読み込めませんでした</p>
+        <p className="text-sm text-muted-foreground">
+          時間をおいてページを再読み込みしてください。
+        </p>
+      </div>
+    );
+  }
+
+  const { business, sales, expenses, openTasks, businessIdeas, activeGoals } = data;
+
+  const { sales: salesTotal, expenses: expensesTotal, profit, margin } = calcBusinessSummary(
+    sales,
+    expenses,
+  );
+  const maxFlow = Math.max(salesTotal, expensesTotal, 1);
+
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayTasks = openTasks.filter((t) => t.due_date === todayStr);
+  const displayTasks = (todayTasks.length > 0 ? todayTasks : openTasks).slice(0, 3);
+
+  const topIdeas = businessIdeas.slice(0, 2);
+
+  const goal = activeGoals[0] ?? null;
+  const goalProgress = goal ? calcGoalProgress(goal.current_value, goal.target_value) : 0;
+
+  const recentTransactions: RecentTransaction[] = [
+    ...sales.map((s) => ({
+      id: s.id,
+      kind: "sale" as const,
+      label: s.label,
+      category: s.category,
+      amount: s.amount,
+      date: s.sold_on,
+    })),
+    ...expenses.map((e) => ({
+      id: e.id,
+      kind: "expense" as const,
+      label: e.label,
+      category: e.category,
+      amount: e.amount,
+      date: e.spent_on,
+    })),
+  ]
+    .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0))
+    .slice(0, 4);
 
   return (
     <div className="flex flex-col gap-8">
       <section>
         <p className="text-sm text-muted-foreground">おかえりなさい</p>
         <h2 className="mt-1 text-xl font-semibold tracking-tight text-foreground">
-          今のビジネスの状態
+          {business.name}の状態
         </h2>
       </section>
 
       <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <StatCard label="今月の売上" value={formatYen(sales)} delta="+12%" deltaTone="good" />
-        <StatCard label="今月の利益" value={formatYen(profit)} delta={`利益率 ${margin}%`} deltaTone="good" />
+        <StatCard label="売上" value={formatYen(salesTotal)} />
+        <StatCard
+          label="利益"
+          value={formatYen(profit)}
+          delta={`利益率 ${margin}%`}
+          deltaTone={profit >= 0 ? "good" : "critical"}
+        />
         <StatCard label="未完了タスク" value={String(openTasks.length)} />
-        <StatCard label="ビジネスアイデア" value={String(mockIdeas.length)} />
+        <StatCard label="ビジネスアイデア" value={String(businessIdeas.length)} />
       </section>
 
       <section>
@@ -61,7 +119,7 @@ export default function DashboardPage() {
       <section>
         <SectionHeader title="今日やること" href="/tasks" />
         <div className="flex flex-col gap-2">
-          {topTasks.map((task) => (
+          {displayTasks.map((task) => (
             <Card key={task.id} className="flex items-center justify-between gap-3 py-3">
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium text-foreground">{task.title}</p>
@@ -70,7 +128,7 @@ export default function DashboardPage() {
               <Badge tone={priorityTone[task.priority]}>{task.priority}</Badge>
             </Card>
           ))}
-          {topTasks.length === 0 ? (
+          {displayTasks.length === 0 ? (
             <Card className="text-sm text-muted-foreground">
               未完了のタスクはありません。
             </Card>
@@ -88,13 +146,18 @@ export default function DashboardPage() {
                 <Badge tone={stageTone[idea.stage]}>{stageLabel[idea.stage]}</Badge>
               </div>
               <div className="mt-3 flex items-center gap-3">
-                <Bar value={idea.potentialScore} max={100} />
+                <Bar value={idea.potential_score} max={100} />
                 <span className="shrink-0 text-xs text-muted-foreground">
-                  {idea.potentialScore}
+                  {idea.potential_score}
                 </span>
               </div>
             </Card>
           ))}
+          {topIdeas.length === 0 ? (
+            <Card className="text-sm text-muted-foreground">
+              まだビジネスアイデアが登録されていません。
+            </Card>
+          ) : null}
         </div>
       </section>
 
@@ -104,18 +167,85 @@ export default function DashboardPage() {
           <div>
             <div className="mb-1.5 flex items-center justify-between text-xs">
               <span className="text-muted-foreground">売上</span>
-              <span className="font-medium text-foreground">{formatYen(sales)}</span>
+              <span className="font-medium text-foreground">{formatYen(salesTotal)}</span>
             </div>
-            <Bar value={sales} max={maxFlow} tone="good" />
+            <Bar value={salesTotal} max={maxFlow} tone="good" />
           </div>
           <div>
             <div className="mb-1.5 flex items-center justify-between text-xs">
               <span className="text-muted-foreground">経費</span>
-              <span className="font-medium text-foreground">{formatYen(expenses)}</span>
+              <span className="font-medium text-foreground">{formatYen(expensesTotal)}</span>
             </div>
-            <Bar value={expenses} max={maxFlow} tone="critical" />
+            <Bar value={expensesTotal} max={maxFlow} tone="critical" />
           </div>
         </Card>
+      </section>
+
+      <section>
+        <SectionHeader title="最近の取引" href="/finance" />
+        <div className="flex flex-col gap-2">
+          {recentTransactions.map((tx) => {
+            const isSale = tx.kind === "sale";
+            return (
+              <Card key={`${tx.kind}-${tx.id}`} className="flex items-center justify-between gap-3 py-3">
+                <div className="flex min-w-0 items-center gap-3">
+                  <div
+                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
+                      isSale ? "bg-emerald-500/10" : "bg-red-500/10"
+                    }`}
+                  >
+                    {isSale ? (
+                      <ArrowUpRight className="h-4 w-4 text-emerald-400" aria-hidden />
+                    ) : (
+                      <ArrowDownRight className="h-4 w-4 text-red-400" aria-hidden />
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-foreground">{tx.label}</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {tx.category} ・ {tx.date}
+                    </p>
+                  </div>
+                </div>
+                <span
+                  className={`shrink-0 text-sm font-semibold ${
+                    isSale ? "text-emerald-400" : "text-red-400"
+                  }`}
+                >
+                  {isSale ? "+" : "-"}
+                  {formatYen(tx.amount)}
+                </span>
+              </Card>
+            );
+          })}
+          {recentTransactions.length === 0 ? (
+            <Card className="text-sm text-muted-foreground">
+              まだ売上・経費が登録されていません。
+            </Card>
+          ) : null}
+        </div>
+      </section>
+
+      <section>
+        <SectionHeader title="目標" href="/finance" />
+        {goal ? (
+          <Card className="flex flex-col gap-3">
+            <div className="flex items-center justify-between gap-3">
+              <p className="truncate text-sm font-medium text-foreground">{goal.title}</p>
+              <span className="shrink-0 text-xs font-medium text-muted-foreground">
+                {goalProgress}%
+              </span>
+            </div>
+            <Bar value={goalProgress} max={100} tone={goalProgress >= 100 ? "good" : "neutral"} />
+            {goal.target_date ? (
+              <p className="text-xs text-muted-foreground">期限: {goal.target_date}</p>
+            ) : null}
+          </Card>
+        ) : (
+          <Card className="text-sm text-muted-foreground">
+            進行中の目標はまだ設定されていません。
+          </Card>
+        )}
       </section>
     </div>
   );
