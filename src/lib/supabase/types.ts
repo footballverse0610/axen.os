@@ -97,3 +97,14 @@ export interface Expense {
   spent_on: string;
   created_at: string;
 }
+
+export type CoachRole = "user" | "coach";
+
+export interface CoachMessage {
+  id: string;
+  business_id: string;
+  user_id: string;
+  role: CoachRole;
+  content: string;
+  created_at: string;
+}
