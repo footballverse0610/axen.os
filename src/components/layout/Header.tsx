@@ -4,18 +4,31 @@ import { LogOut } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { navItems } from "@/lib/nav-items";
 import { logout } from "@/lib/supabase/actions";
+import { BusinessSwitcher } from "./BusinessSwitcher";
+import type { Business } from "@/lib/supabase/types";
 
-export function Header({ userEmail }: { userEmail: string | null }) {
+export function Header({
+  userEmail,
+  businesses,
+  currentBusiness,
+}: {
+  userEmail: string | null;
+  businesses: Business[];
+  currentBusiness: Business;
+}) {
   const pathname = usePathname();
   const current = navItems.find((item) => item.href === pathname);
   const initial = userEmail ? userEmail.charAt(0).toUpperCase() : "?";
 
   return (
-    <header className="sticky top-0 z-30 flex items-center justify-between border-b border-border bg-background/95 px-4 py-4 backdrop-blur supports-[backdrop-filter]:bg-background/80 md:px-8">
-      <h1 className="text-base font-semibold tracking-tight text-foreground">
-        {current?.label ?? "起業しよ。"}
-      </h1>
-      <div className="flex items-center gap-2">
+    <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-border bg-background/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80 md:px-8 md:py-4">
+      <div className="flex min-w-0 flex-col gap-1">
+        <BusinessSwitcher businesses={businesses} currentBusiness={currentBusiness} />
+        <h1 className="truncate text-base font-semibold tracking-tight text-foreground">
+          {current?.label ?? "起業しよ。"}
+        </h1>
+      </div>
+      <div className="flex shrink-0 items-center gap-2">
         <div
           className="flex h-8 w-8 items-center justify-center rounded-full bg-surface-muted text-xs font-medium text-muted-foreground"
           title={userEmail ?? undefined}

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "./server";
 import { translateAuthError } from "./error-messages";
 import { getCurrentUser } from "./get-current-user";
+import { setCurrentBusinessCookie } from "./business";
 import type { BusinessStage } from "./types";
 
 export interface AuthActionState {
@@ -121,7 +122,9 @@ const MAX_ONE_LINER_LENGTH = 200;
 const MAX_INDUSTRY_LENGTH = 50;
 
 /**
- * 初回設定(オンボーディング)でユーザーの最初の事業を作成する。
+ * 事業を作成する。初回設定(オンボーディング)の最初の事業作成と、
+ * ログイン後に2つ目以降の事業を追加するケースの両方から共通で呼ばれる
+ * (呼び出し元のUIが異なるだけで、作成ロジックは1つに統一している)。
  * user_idはクライアントからの入力を一切信用せず、必ずgetCurrentUser()の
  * 結果(サーバー側でCookieのセッションから検証した値)を使用する。
  */
@@ -156,21 +159,29 @@ export async function createBusiness(
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.from("businesses").insert({
-    user_id: user.id,
-    name,
-    one_liner: oneLiner || null,
-    industry: industry || null,
-    stage: stage as BusinessStage,
-  });
+  const { data, error } = await supabase
+    .from("businesses")
+    .insert({
+      user_id: user.id,
+      name,
+      one_liner: oneLiner || null,
+      industry: industry || null,
+      stage: stage as BusinessStage,
+    })
+    .select("id")
+    .single();
 
-  if (error) {
-    if (error.code === "23505") {
+  if (error || !data) {
+    if (error?.code === "23505") {
       return { error: "同じ名前の事業が既に存在します。別の名前を入力してください。" };
     }
     console.error("createBusiness failed", error);
     return { error: "事業の作成に失敗しました。時間をおいて再度お試しください。" };
   }
+
+  // 新しく作成した事業を選択中にする(初回設定では唯一の事業になるため
+  // 実質的に無影響、2つ目以降の追加では新しい事業へ切り替わる)。
+  await setCurrentBusinessCookie(data.id);
 
   redirect("/");
 }

@@ -17,5 +17,9 @@ export default async function CoachPage() {
     );
   }
 
-  return <CoachChat initialMessages={initialMessages} />;
+  // key={business.id}: CoachChatはストリーミング中の会話を保持するため
+  // initialMessagesをuseStateの初期値としてのみ使う。事業切り替え時に
+  // 別事業の履歴へ確実に入れ替えるため、business.id が変わったら
+  // コンポーネントごと再マウントさせる。
+  return <CoachChat key={business.id} initialMessages={initialMessages} />;
 }

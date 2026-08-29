@@ -15,7 +15,7 @@ const STAGE_OPTIONS = [
 const fieldClass =
   "rounded-xl border border-border bg-surface-muted px-4 py-3 text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground/20";
 
-export function OnboardingForm() {
+export function OnboardingForm({ submitLabel = "はじめる" }: { submitLabel?: string }) {
   const [state, formAction, isPending] = useActionState(createBusiness, initialState);
 
   return (
@@ -87,7 +87,7 @@ export function OnboardingForm() {
         disabled={isPending}
         className="mt-2 w-full rounded-xl bg-foreground py-3 text-sm font-semibold text-background transition-opacity hover:opacity-90 disabled:opacity-60"
       >
-        {isPending ? "作成中…" : "はじめる"}
+        {isPending ? "作成中…" : submitLabel}
       </button>
     </form>
   );
