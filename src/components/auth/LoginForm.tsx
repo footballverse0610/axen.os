@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState } from "react";
 import { login, type AuthActionState } from "@/lib/supabase/actions";
 
@@ -26,9 +27,17 @@ export function LoginForm() {
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="password" className="text-xs font-medium text-muted-foreground">
-          パスワード
-        </label>
+        <div className="flex items-center justify-between">
+          <label htmlFor="password" className="text-xs font-medium text-muted-foreground">
+            パスワード
+          </label>
+          <Link
+            href="/reset-password"
+            className="text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+          >
+            パスワードをお忘れの方はこちら
+          </Link>
+        </div>
         <input
           id="password"
           name="password"

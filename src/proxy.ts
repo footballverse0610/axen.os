@@ -4,7 +4,16 @@ import { updateSession } from "@/lib/supabase/middleware";
 /**
  * 認証必須のルート。未ログインの場合は /login へリダイレクトする。
  */
-const PROTECTED_PATHS = ["/", "/ideas", "/tasks", "/finance", "/goals", "/coach", "/onboarding"];
+const PROTECTED_PATHS = [
+  "/",
+  "/ideas",
+  "/tasks",
+  "/finance",
+  "/goals",
+  "/coach",
+  "/onboarding",
+  "/update-password",
+];
 
 /**
  * ログイン済みならアクセスさせないルート。

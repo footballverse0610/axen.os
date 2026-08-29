@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { createClient } from "./server";
 import { translateAuthError } from "./error-messages";
 import { getCurrentUser } from "./get-current-user";
@@ -109,6 +110,97 @@ export async function logout(): Promise<void> {
   const supabase = await createClient();
   await supabase.auth.signOut();
   redirect("/login");
+}
+
+/**
+ * リダイレクトURL組み立て用に、現在のリクエストのオリジンを取得する。
+ * Server Actionはfetch()経由のPOSTとして呼ばれるため、Originヘッダーが
+ * 通常付与される。念のためhost/x-forwarded-protoからも組み立てられるよう
+ * フォールバックする(末尾のURLはSupabase側の許可リストで最終的に検証される)。
+ */
+async function getOrigin(): Promise<string> {
+  const headersList = await headers();
+  const origin = headersList.get("origin");
+  if (origin) {
+    return origin;
+  }
+  const host = headersList.get("host") ?? "localhost:3000";
+  const proto = headersList.get("x-forwarded-proto") ?? "http";
+  return `${proto}://${host}`;
+}
+
+/**
+ * パスワード再設定メールを送信する。
+ * user_idはここでは使わず(未ログイン状態から呼ばれるため)、メールアドレスを
+ * Supabase Authへそのまま渡すのみ。Supabaseは対象メールアドレスの存在有無に
+ * 関わらず常に同じ成功レスポンスを返す仕様のため、ここで存在確認の分岐を
+ * 追加しない(メールアドレスの存在を第三者に明示しないため)。
+ *
+ * リセットリンクはsrc/app/auth/confirm/route.tsで検証し、
+ * /update-password へ遷移させる。
+ */
+export async function requestPasswordReset(
+  _prevState: AuthActionState,
+  formData: FormData,
+): Promise<AuthActionState> {
+  const email = String(formData.get("email") ?? "").trim();
+
+  if (!email) {
+    return { error: "メールアドレスを入力してください。" };
+  }
+
+  const origin = await getOrigin();
+  const supabase = await createClient();
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${origin}/update-password`,
+  });
+
+  if (error) {
+    return { error: translateAuthError(error) };
+  }
+
+  return {
+    error: null,
+    success: "パスワード再設定用のメールを送信しました。メールをご確認ください。",
+  };
+}
+
+/**
+ * 新しいパスワードを設定する。
+ * /auth/confirm でのトークン検証によって確立された正規のセッションが
+ * 前提のため、ここでも改めてgetCurrentUser()で認証確認を行う
+ * (未ログインでの呼び出しを許さない)。
+ */
+export async function updatePassword(
+  _prevState: AuthActionState,
+  formData: FormData,
+): Promise<AuthActionState> {
+  const password = String(formData.get("password") ?? "");
+  const passwordConfirm = String(formData.get("passwordConfirm") ?? "");
+
+  if (!password) {
+    return { error: "新しいパスワードを入力してください。" };
+  }
+  if (password.length < 6) {
+    return { error: "パスワードは6文字以上で入力してください。" };
+  }
+  if (password !== passwordConfirm) {
+    return { error: "パスワードが一致しません。" };
+  }
+
+  const user = await getCurrentUser();
+  if (!user) {
+    redirect("/login");
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.updateUser({ password });
+
+  if (error) {
+    return { error: translateAuthError(error) };
+  }
+
+  redirect("/");
 }
 
 export interface BusinessActionState {

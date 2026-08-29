@@ -17,6 +17,7 @@ const messagesByCode: Record<string, string> = {
   over_email_send_rate_limit: "リクエストが多すぎます。しばらく時間をおいてお試しください。",
   over_request_rate_limit: "リクエストが多すぎます。しばらく時間をおいてお試しください。",
   signup_disabled: "現在、新規登録を受け付けていません。",
+  same_password: "新しいパスワードは、現在のパスワードと異なるものにしてください。",
 };
 
 export function translateAuthError(error: AuthError): string {
