@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowDownRight, ArrowUpRight, Plus, Pencil, Trash2, Wallet } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Download, Plus, Pencil, Trash2, Wallet } from "lucide-react";
 import { useState } from "react";
 import { Bar } from "@/components/ui/Bar";
 import { Card } from "@/components/ui/Card";
@@ -44,15 +44,24 @@ export function FinanceClient({ sales, expenses }: { sales: Sale[]; expenses: Ex
   return (
     <div className="flex flex-col gap-8">
       <section className="flex items-center justify-between gap-3">
-        <p className="text-sm text-muted-foreground">売上・経費を記録します。</p>
-        <button
-          type="button"
-          onClick={() => setModal({ type: "create" })}
-          className="flex shrink-0 items-center gap-1.5 rounded-full bg-foreground px-3.5 py-2 text-xs font-semibold text-background transition-opacity hover:opacity-90"
-        >
-          <Plus className="h-3.5 w-3.5" aria-hidden />
-          追加
-        </button>
+        <p className="min-w-0 truncate text-sm text-muted-foreground">売上・経費を記録します。</p>
+        <div className="flex shrink-0 items-center gap-2">
+          <a
+            href="/api/finance/export"
+            className="flex items-center gap-1.5 rounded-full border border-border bg-surface px-3.5 py-2 text-xs font-semibold text-foreground transition-colors hover:bg-surface-muted"
+          >
+            <Download className="h-3.5 w-3.5" aria-hidden />
+            CSV出力
+          </a>
+          <button
+            type="button"
+            onClick={() => setModal({ type: "create" })}
+            className="flex items-center gap-1.5 rounded-full bg-foreground px-3.5 py-2 text-xs font-semibold text-background transition-opacity hover:opacity-90"
+          >
+            <Plus className="h-3.5 w-3.5" aria-hidden />
+            追加
+          </button>
+        </div>
       </section>
 
       <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
