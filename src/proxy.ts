@@ -11,6 +11,7 @@ const PROTECTED_PATHS = [
   "/finance",
   "/goals",
   "/coach",
+  "/settings",
   "/onboarding",
   "/update-password",
 ];

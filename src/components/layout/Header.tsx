@@ -1,6 +1,7 @@
 "use client";
 
 import { LogOut } from "lucide-react";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { navItems } from "@/lib/nav-items";
 import { logout } from "@/lib/supabase/actions";
@@ -29,13 +30,14 @@ export function Header({
         </h1>
       </div>
       <div className="flex shrink-0 items-center gap-2">
-        <div
-          className="flex h-8 w-8 items-center justify-center rounded-full bg-surface-muted text-xs font-medium text-muted-foreground"
-          title={userEmail ?? undefined}
-          aria-hidden
+        <Link
+          href="/settings"
+          aria-label="設定"
+          title={userEmail ?? "設定"}
+          className="flex h-8 w-8 items-center justify-center rounded-full bg-surface-muted text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
         >
           {initial}
-        </div>
+        </Link>
         <form action={logout}>
           <button
             type="submit"

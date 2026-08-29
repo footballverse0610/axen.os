@@ -166,6 +166,20 @@ export async function requestPasswordReset(
   };
 }
 
+/** updatePassword/changePasswordで共通のバリデーション(文言も含めて完全に同一)。 */
+function validateNewPassword(password: string, passwordConfirm: string): string | null {
+  if (!password) {
+    return "新しいパスワードを入力してください。";
+  }
+  if (password.length < 6) {
+    return "パスワードは6文字以上で入力してください。";
+  }
+  if (password !== passwordConfirm) {
+    return "パスワードが一致しません。";
+  }
+  return null;
+}
+
 /**
  * 新しいパスワードを設定する。
  * /auth/confirm でのトークン検証によって確立された正規のセッションが
@@ -179,14 +193,9 @@ export async function updatePassword(
   const password = String(formData.get("password") ?? "");
   const passwordConfirm = String(formData.get("passwordConfirm") ?? "");
 
-  if (!password) {
-    return { error: "新しいパスワードを入力してください。" };
-  }
-  if (password.length < 6) {
-    return { error: "パスワードは6文字以上で入力してください。" };
-  }
-  if (password !== passwordConfirm) {
-    return { error: "パスワードが一致しません。" };
+  const validationError = validateNewPassword(password, passwordConfirm);
+  if (validationError) {
+    return { error: validationError };
   }
 
   const user = await getCurrentUser();
@@ -202,6 +211,45 @@ export async function updatePassword(
   }
 
   redirect("/");
+}
+
+/**
+ * ログイン中ユーザーが/settingsからパスワードを変更する。
+ * updatePassword()との違いは、リセットリンク経由ではなく通常のログイン
+ * セッションを前提とすること、成功後にredirectせず設定画面に留まって
+ * 成功メッセージを表示することの2点(処理自体はupdateUser({password})で共通)。
+ *
+ * 「現在のパスワード」の入力は求めない: Supabase Authはログイン中セッションが
+ * あれば通常updateUser({password})だけで更新できる。プロジェクト側で
+ * Secure password changeが有効かつセッションが古い場合のみ
+ * reauthentication_neededエラーが返るため、その場合は再ログインを案内する
+ * (独自の現在パスワード確認ロジックは実装しない)。
+ */
+export async function changePassword(
+  _prevState: AuthActionState,
+  formData: FormData,
+): Promise<AuthActionState> {
+  const password = String(formData.get("password") ?? "");
+  const passwordConfirm = String(formData.get("passwordConfirm") ?? "");
+
+  const validationError = validateNewPassword(password, passwordConfirm);
+  if (validationError) {
+    return { error: validationError };
+  }
+
+  const user = await getCurrentUser();
+  if (!user) {
+    redirect("/login");
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.updateUser({ password });
+
+  if (error) {
+    return { error: translateAuthError(error) };
+  }
+
+  return { error: null, success: "パスワードを変更しました。" };
 }
 
 export interface BusinessActionState {
