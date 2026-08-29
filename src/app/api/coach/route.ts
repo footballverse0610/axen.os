@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { getAnthropicClient, COACH_MODEL } from "@/lib/anthropic/client";
 import { buildCoachSystemPrompt } from "@/lib/anthropic/system-prompt";
+import { streamCoachReply } from "@/lib/coach/provider";
 import { getCurrentUser } from "@/lib/supabase/get-current-user";
 import { getCurrentBusiness } from "@/lib/supabase/business";
 import { getCoachContext } from "@/lib/supabase/coach-context";
@@ -106,28 +106,21 @@ export async function POST(request: Request) {
     { role: "user" as const, content: trimmedMessage },
   ];
 
-  const client = getAnthropicClient();
   const encoder = new TextEncoder();
 
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
       let fullText = "";
       try {
-        const claudeStream = client.messages.stream({
-          model: COACH_MODEL,
-          max_tokens: 2048,
-          system: systemPrompt,
+        for await (const chunk of streamCoachReply({
+          systemPrompt,
           messages: claudeMessages,
-        });
-
-        for await (const event of claudeStream) {
-          if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-            fullText += event.delta.text;
-            controller.enqueue(encoder.encode(event.delta.text));
-          }
+          userMessage: trimmedMessage,
+          context,
+        })) {
+          fullText += chunk;
+          controller.enqueue(encoder.encode(chunk));
         }
-
-        await claudeStream.finalMessage();
 
         if (fullText.trim().length > 0) {
           await insertCoachMessage({
