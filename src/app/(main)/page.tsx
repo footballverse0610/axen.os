@@ -46,6 +46,8 @@ export default async function DashboardPage() {
   const todayTasks = openTasks.filter((t) => t.due_date === todayStr);
   const displayTasks = (todayTasks.length > 0 ? todayTasks : openTasks).slice(0, 3);
 
+  const topTask = displayTasks[0] ?? null;
+
   const topIdeas = businessIdeas.slice(0, 2);
 
   const goal = activeGoals[0] ?? null;
@@ -100,10 +102,12 @@ export default async function DashboardPage() {
           </div>
           <div className="flex-1">
             <p className="text-xs font-medium text-muted-foreground">
-              AI Business Coachから
+              AI Business Coach
             </p>
             <p className="mt-1 text-sm leading-relaxed text-foreground">
-              「LP用のキャッチコピー案」の期限が今日です。既存顧客ヒアリングの結果を反映すると説得力が上がります。
+              {topTask
+                ? `「${topTask.title}」が今の優先タスクです。進め方に迷ったらコーチに相談してみましょう。`
+                : "タスクや目標について、AIコーチに相談してみましょう。"}
             </p>
             <Link
               href="/coach"

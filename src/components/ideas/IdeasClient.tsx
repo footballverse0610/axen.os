@@ -99,7 +99,7 @@ export function IdeasClient({ ideas }: { ideas: BusinessIdea[] }) {
         {filteredIdeas.map((idea) => (
           <Card key={idea.id} className="flex flex-col gap-3">
             <div className="flex items-start justify-between gap-3">
-              <h3 className="text-sm font-semibold text-foreground">{idea.title}</h3>
+              <h3 className="min-w-0 text-sm font-semibold text-foreground">{idea.title}</h3>
               <Badge tone={stageTone[idea.stage]}>{stageLabel[idea.stage]}</Badge>
             </div>
             {idea.description ? (

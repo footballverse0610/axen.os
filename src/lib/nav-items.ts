@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { LayoutDashboard, Lightbulb, ListChecks, Wallet, Sparkles } from "lucide-react";
+import { LayoutDashboard, Lightbulb, ListChecks, Wallet, Target, Sparkles } from "lucide-react";
 
 export interface NavItem {
   href: string;
@@ -12,5 +12,6 @@ export const navItems: NavItem[] = [
   { href: "/ideas", label: "Ideas", icon: Lightbulb },
   { href: "/tasks", label: "Tasks", icon: ListChecks },
   { href: "/finance", label: "Finance", icon: Wallet },
+  { href: "/goals", label: "Goals", icon: Target },
   { href: "/coach", label: "Coach", icon: Sparkles },
 ];

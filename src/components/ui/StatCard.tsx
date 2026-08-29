@@ -15,7 +15,7 @@ export function StatCard({
   icon?: LucideIcon;
 }) {
   return (
-    <Card className="flex flex-col gap-3">
+    <Card className="flex min-w-0 flex-col gap-3">
       <div className="flex items-center justify-between">
         <span className="text-xs font-medium text-muted-foreground">{label}</span>
         {Icon ? <Icon className="h-4 w-4 text-muted-foreground" aria-hidden /> : null}
