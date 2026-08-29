@@ -1,13 +1,14 @@
 "use client";
 
-import { Building2, Check, ChevronDown, Plus } from "lucide-react";
+import { Building2, Check, ChevronDown, Pencil, Plus } from "lucide-react";
 import { useState, useTransition } from "react";
 import { Modal } from "@/components/ui/Modal";
 import { OnboardingForm } from "@/components/onboarding/OnboardingForm";
+import { DeleteBusinessModal } from "./DeleteBusinessModal";
 import { switchBusiness } from "@/lib/supabase/business-actions";
 import type { Business } from "@/lib/supabase/types";
 
-type ModalView = "closed" | "list" | "create";
+type ModalView = "closed" | "list" | "create" | "edit" | "delete";
 
 export function BusinessSwitcher({
   businesses,
@@ -54,22 +55,36 @@ export function BusinessSwitcher({
             {businesses.map((business) => {
               const isCurrent = business.id === currentBusiness.id;
               return (
-                <button
+                <div
                   key={business.id}
-                  type="button"
-                  disabled={isPending}
-                  onClick={() => handleSelect(business.id)}
-                  className={`flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
-                    isCurrent
-                      ? "bg-surface-muted text-foreground"
-                      : "text-muted-foreground hover:bg-surface-muted hover:text-foreground"
+                  className={`flex items-center gap-1 rounded-xl pr-1.5 text-sm transition-colors ${
+                    isCurrent ? "bg-surface-muted text-foreground" : "text-muted-foreground"
                   }`}
                 >
-                  <span className="min-w-0 truncate font-medium">{business.name}</span>
+                  <button
+                    type="button"
+                    disabled={isPending}
+                    onClick={() => handleSelect(business.id)}
+                    className={`min-w-0 flex-1 rounded-xl px-3 py-2.5 text-left font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
+                      isCurrent ? "" : "hover:bg-surface-muted hover:text-foreground"
+                    }`}
+                  >
+                    <span className="block truncate">{business.name}</span>
+                  </button>
                   {isCurrent ? (
-                    <Check className="h-4 w-4 shrink-0 text-foreground" aria-hidden />
+                    <>
+                      <button
+                        type="button"
+                        aria-label="現在の事業を編集"
+                        onClick={() => setView("edit")}
+                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-surface hover:text-foreground"
+                      >
+                        <Pencil className="h-3.5 w-3.5" aria-hidden />
+                      </button>
+                      <Check className="h-4 w-4 shrink-0 text-foreground" aria-hidden />
+                    </>
                   ) : null}
-                </button>
+                </div>
               );
             })}
           </div>
@@ -95,6 +110,33 @@ export function BusinessSwitcher({
         <Modal title="事業を追加" onClose={() => setView("closed")}>
           <OnboardingForm submitLabel="追加する" />
         </Modal>
+      ) : null}
+
+      {view === "edit" ? (
+        <Modal title="事業を編集" onClose={() => setView("closed")}>
+          <OnboardingForm
+            business={currentBusiness}
+            submitLabel="変更を保存"
+            onDone={() => setView("closed")}
+          />
+          <div className="mt-5 border-t border-border pt-4">
+            <button
+              type="button"
+              onClick={() => setView("delete")}
+              className="text-sm font-medium text-red-400 transition-colors hover:text-red-300"
+            >
+              この事業を削除する
+            </button>
+          </div>
+        </Modal>
+      ) : null}
+
+      {view === "delete" ? (
+        <DeleteBusinessModal
+          business={currentBusiness}
+          onClose={() => setView("edit")}
+          onDeleted={() => setView("closed")}
+        />
       ) : null}
     </>
   );

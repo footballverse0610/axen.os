@@ -2,10 +2,11 @@
 
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
+import { revalidatePath } from "next/cache";
 import { createClient } from "./server";
 import { translateAuthError } from "./error-messages";
 import { getCurrentUser } from "./get-current-user";
-import { setCurrentBusinessCookie } from "./business";
+import { getCurrentBusiness, setCurrentBusinessCookie } from "./business";
 import type { BusinessStage } from "./types";
 
 export interface AuthActionState {
@@ -205,6 +206,7 @@ export async function updatePassword(
 
 export interface BusinessActionState {
   error: string | null;
+  success?: boolean;
 }
 
 const BUSINESS_STAGES: BusinessStage[] = ["idea", "preparing", "operating", "paused"];
@@ -212,6 +214,41 @@ const BUSINESS_STAGES: BusinessStage[] = ["idea", "preparing", "operating", "pau
 const MAX_NAME_LENGTH = 100;
 const MAX_ONE_LINER_LENGTH = 200;
 const MAX_INDUSTRY_LENGTH = 50;
+
+interface ParsedBusinessInput {
+  name: string;
+  oneLiner: string;
+  industry: string;
+  stage: string;
+}
+
+function parseBusinessForm(formData: FormData): ParsedBusinessInput {
+  return {
+    name: String(formData.get("name") ?? "").trim(),
+    oneLiner: String(formData.get("oneLiner") ?? "").trim(),
+    industry: String(formData.get("industry") ?? "").trim(),
+    stage: String(formData.get("stage") ?? ""),
+  };
+}
+
+function validateBusinessInput(input: ParsedBusinessInput): string | null {
+  if (!input.name) {
+    return "事業名を入力してください。";
+  }
+  if (input.name.length > MAX_NAME_LENGTH) {
+    return `事業名は${MAX_NAME_LENGTH}文字以内で入力してください。`;
+  }
+  if (input.oneLiner.length > MAX_ONE_LINER_LENGTH) {
+    return `事業内容は${MAX_ONE_LINER_LENGTH}文字以内で入力してください。`;
+  }
+  if (input.industry.length > MAX_INDUSTRY_LENGTH) {
+    return `業種は${MAX_INDUSTRY_LENGTH}文字以内で入力してください。`;
+  }
+  if (!BUSINESS_STAGES.includes(input.stage as BusinessStage)) {
+    return "事業ステージを選択してください。";
+  }
+  return null;
+}
 
 /**
  * 事業を作成する。初回設定(オンボーディング)の最初の事業作成と、
@@ -229,25 +266,10 @@ export async function createBusiness(
     redirect("/login");
   }
 
-  const name = String(formData.get("name") ?? "").trim();
-  const oneLiner = String(formData.get("oneLiner") ?? "").trim();
-  const industry = String(formData.get("industry") ?? "").trim();
-  const stage = String(formData.get("stage") ?? "");
-
-  if (!name) {
-    return { error: "事業名を入力してください。" };
-  }
-  if (name.length > MAX_NAME_LENGTH) {
-    return { error: `事業名は${MAX_NAME_LENGTH}文字以内で入力してください。` };
-  }
-  if (oneLiner.length > MAX_ONE_LINER_LENGTH) {
-    return { error: `事業内容は${MAX_ONE_LINER_LENGTH}文字以内で入力してください。` };
-  }
-  if (industry.length > MAX_INDUSTRY_LENGTH) {
-    return { error: `業種は${MAX_INDUSTRY_LENGTH}文字以内で入力してください。` };
-  }
-  if (!BUSINESS_STAGES.includes(stage as BusinessStage)) {
-    return { error: "事業ステージを選択してください。" };
+  const parsed = parseBusinessForm(formData);
+  const validationError = validateBusinessInput(parsed);
+  if (validationError) {
+    return { error: validationError };
   }
 
   const supabase = await createClient();
@@ -255,10 +277,10 @@ export async function createBusiness(
     .from("businesses")
     .insert({
       user_id: user.id,
-      name,
-      one_liner: oneLiner || null,
-      industry: industry || null,
-      stage: stage as BusinessStage,
+      name: parsed.name,
+      one_liner: parsed.oneLiner || null,
+      industry: parsed.industry || null,
+      stage: parsed.stage as BusinessStage,
     })
     .select("id")
     .single();
@@ -276,4 +298,58 @@ export async function createBusiness(
   await setCurrentBusinessCookie(data.id);
 
   redirect("/");
+}
+
+/**
+ * 現在選択中の事業を編集する。
+ *
+ * business_idはフォーム・hidden inputなど、クライアントからは一切受け取らない。
+ * 常にgetCurrentBusiness()(Cookie+RLSで検証済み)で対象を解決するため、
+ * 他ユーザーの事業や存在しないIDを指定して編集する経路は存在しない。
+ * RLSのbusinesses_update_own(auth.uid() = user_id)も最終防波堤として働く。
+ */
+export async function updateBusiness(
+  _prevState: BusinessActionState,
+  formData: FormData,
+): Promise<BusinessActionState> {
+  const user = await getCurrentUser();
+  if (!user) {
+    redirect("/login");
+  }
+
+  const business = await getCurrentBusiness();
+  if (!business) {
+    return { error: "編集対象の事業が見つかりませんでした。" };
+  }
+
+  const parsed = parseBusinessForm(formData);
+  const validationError = validateBusinessInput(parsed);
+  if (validationError) {
+    return { error: validationError };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("businesses")
+    .update({
+      name: parsed.name,
+      one_liner: parsed.oneLiner || null,
+      industry: parsed.industry || null,
+      stage: parsed.stage as BusinessStage,
+    })
+    .eq("id", business.id);
+
+  if (error) {
+    if (error.code === "23505") {
+      return { error: "同じ名前の事業が既に存在します。別の名前を入力してください。" };
+    }
+    console.error("updateBusiness failed", error);
+    return { error: "事業の更新に失敗しました。時間をおいて再度お試しください。" };
+  }
+
+  // Header/Dashboard/BusinessSwitcher等、事業名などを表示している全画面に
+  // 即座に反映させる(switchBusinessと同じ再検証範囲)。
+  revalidatePath("/", "layout");
+
+  return { error: null, success: true };
 }

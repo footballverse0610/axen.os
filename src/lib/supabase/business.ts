@@ -82,3 +82,14 @@ export async function setCurrentBusinessCookie(businessId: string): Promise<void
     maxAge: 60 * 60 * 24 * 365,
   });
 }
+
+/**
+ * 選択中business_idのCookieを削除する。
+ * 事業削除後、存在しないbusiness_idがCookieに残り続けないようにするために使う
+ * (削除後に残存事業がある場合はsetCurrentBusinessCookieで新しい事業に
+ * 切り替える。無い場合はこちらでCookie自体を消す)。
+ */
+export async function clearCurrentBusinessCookie(): Promise<void> {
+  const store = await cookies();
+  store.delete(CURRENT_BUSINESS_COOKIE);
+}
