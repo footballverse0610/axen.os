@@ -84,8 +84,19 @@ export async function signup(
     return { error: "パスワードが一致しません。" };
   }
 
+  // 確認メール内リンクの戻り先を本番Vercel環境等の実際のoriginで明示する。
+  // 未指定の場合、Supabase Dashboard側の「Site URL」設定に完全依存してしまい、
+  // それが本番URLになっていないと確認メールのリンクが誤った環境を指してしまう
+  // (requestPasswordReset()と同じ理由・同じパターン)。
+  const origin = await getOrigin();
   const supabase = await createClient();
-  const { data, error } = await supabase.auth.signUp({ email, password });
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      emailRedirectTo: `${origin}/auth/confirm`,
+    },
+  });
 
   if (error) {
     return { error: translateAuthError(error) };
