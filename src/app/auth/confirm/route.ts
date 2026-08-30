@@ -32,7 +32,10 @@ function resolveSafeNextPath(rawNext: string | null): string {
 }
 
 /**
- * パスワード再設定メール内のリンクから戻ってくるRoute Handler。
+ * 確認メール・パスワード再設定メール内のリンクから戻ってくるRoute Handler。
+ * signup確認(type=signup/email)・パスワード再設定(type=recovery)の両方が
+ * このルートを共有する(typeによって処理を分岐する必要はない。verifyOtpは
+ * type共通のAPIのため)。
  * Supabase公式のNext.js SSR向け推奨パターン(token_hash + verifyOtp)に
  * 従う。リンクのトークンをこのアプリ側で保存・管理することはせず、
  * Supabase Authへそのまま渡して検証するのみ。
@@ -41,7 +44,10 @@ function resolveSafeNextPath(rawNext: string | null): string {
  * (このアプリの既存のCookieベースセッション/RLSの前提をそのまま利用)。
  *
  * 対応するSupabase Dashboard側の設定(メールテンプレートでこのURLへ
- * token_hash/type/nextを渡すこと)は別途必要。
+ * token_hash/type/nextを渡すこと)が別途必要。必須設定値はREADME.mdの
+ * 「Supabase Auth設定(本番環境)」を参照。next未指定時はDEFAULT_NEXT_PATH
+ * (パスワード再設定フロー向け)にフォールバックするため、signup確認メールの
+ * テンプレートでは明示的に next=/ 等を指定すること。
  */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
