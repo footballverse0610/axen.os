@@ -3,11 +3,25 @@
  * src/lib/types.ts はUIの仮データ用の型のため、こちらとは別に管理する。
  */
 
+export type OnboardingCurrentState =
+  | "serious"
+  | "has_goal_but_inconsistent"
+  | "unsure"
+  | "passive"
+  | "gradual";
+
+export type OnboardingAvailableTime = "min_5_10" | "min_15_30" | "min_30_60" | "hour_plus";
+
 export interface Profile {
   id: string;
   display_name: string | null;
   avatar_url: string | null;
   onboarding_completed: boolean;
+  main_goals: string[];
+  current_state: OnboardingCurrentState | null;
+  three_month_goal: string | null;
+  available_time: OnboardingAvailableTime | null;
+  coach_preferences: string[];
   created_at: string;
   updated_at: string;
 }

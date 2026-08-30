@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { OnboardingForm } from "@/components/onboarding/OnboardingForm";
 import { getUserBusinesses } from "@/lib/supabase/business";
 import { getCurrentUser } from "@/lib/supabase/get-current-user";
+import { getCurrentProfile } from "@/lib/supabase/profile";
 
 export const metadata: Metadata = {
   title: "初回設定 | 起業しよ。",
@@ -12,6 +13,12 @@ export default async function OnboardingPage() {
   const user = await getCurrentUser();
   if (!user) {
     redirect("/login");
+  }
+
+  // 人生の目標ヒアリング(/welcome)を先に完了させる。
+  const profile = await getCurrentProfile();
+  if (!profile?.onboarding_completed) {
+    redirect("/welcome");
   }
 
   const businesses = await getUserBusinesses();

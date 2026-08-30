@@ -4,6 +4,7 @@ import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { getCurrentBusiness, getUserBusinesses } from "@/lib/supabase/business";
 import { getCurrentUser } from "@/lib/supabase/get-current-user";
+import { getCurrentProfile } from "@/lib/supabase/profile";
 
 export default async function MainLayout({ children }: LayoutProps<"/">) {
   const user = await getCurrentUser();
@@ -12,6 +13,12 @@ export default async function MainLayout({ children }: LayoutProps<"/">) {
   // 念のためレイアウト側でも防御しておく。
   if (!user) {
     redirect("/login");
+  }
+
+  // 人生の目標ヒアリング(/welcome)が未完了なら、事業作成onboardingより先に案内する。
+  const profile = await getCurrentProfile();
+  if (!profile?.onboarding_completed) {
+    redirect("/welcome");
   }
 
   const businesses = await getUserBusinesses();

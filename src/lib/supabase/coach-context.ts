@@ -1,18 +1,34 @@
 import "server-only";
 import { getDashboardData, type DashboardData } from "./dashboard";
+import { getCurrentProfile } from "./profile";
 import { calcBusinessSummary, calcGoalProgress } from "./finance";
-
-export type CoachContext = DashboardData;
+import { currentStateLabel, availableTimeLabel } from "../onboarding-options";
+import type { Profile } from "./types";
 
 /**
- * AI Coachの回答生成に使う「現在の事業状況」を取得する。
- * Dashboardと同じgetDashboardData()を再利用することで、
+ * DashboardDataを拡張(交差型)する形でprofileを追加する。既存のcontext.business
+ * /context.sales等のフィールドアクセスはそのまま動作し続ける(後方互換)。
+ */
+export type CoachContext = DashboardData & { profile: Profile | null };
+
+/**
+ * AI Coachの回答生成に使う「現在の事業状況」+「初回オンボーディングで
+ * 伝えられた人生の目標」を取得する。
+ * 事業データはDashboardと同じgetDashboardData()を再利用することで、
  * Dashboard/Finance/Goalsと矛盾しない同一のデータ・計算(calcBusinessSummary等)
- * を参照する。business_idはgetDashboardData内部のgetCurrentBusiness()
- * (サーバー側・RLS経由)からのみ取得され、クライアント入力は一切使わない。
+ * を参照する。business_id/user_idはgetDashboardData/getCurrentProfile内部の
+ * getCurrentBusiness()・getCurrentUser()(サーバー側・RLS経由)からのみ取得され、
+ * クライアント入力は一切使わない。
  */
 export async function getCoachContext(): Promise<CoachContext | null> {
-  return getDashboardData();
+  const dashboardData = await getDashboardData();
+  if (!dashboardData) {
+    return null;
+  }
+
+  const profile = await getCurrentProfile();
+
+  return { ...dashboardData, profile };
 }
 
 /**
@@ -20,13 +36,33 @@ export async function getCoachContext(): Promise<CoachContext | null> {
  * 生データを丸ごと渡さず、件数を絞ることでトークン消費を抑える。
  */
 export function formatCoachContext(context: CoachContext): string {
-  const { business, sales, expenses, openTasks, businessIdeas, activeGoals } = context;
+  const { business, sales, expenses, openTasks, businessIdeas, activeGoals, profile } = context;
   const { sales: salesTotal, expenses: expensesTotal, profit, margin } = calcBusinessSummary(
     sales,
     expenses,
   );
 
   const lines: string[] = [];
+
+  if (profile?.onboarding_completed) {
+    lines.push("ユーザーが初回登録時に伝えた希望:");
+    if (profile.main_goals.length > 0) {
+      lines.push(`- 変えたいこと: ${profile.main_goals.join("、")}`);
+    }
+    if (profile.current_state) {
+      lines.push(`- 現在の状態: ${currentStateLabel[profile.current_state]}`);
+    }
+    if (profile.three_month_goal) {
+      lines.push(`- 3ヶ月後の目標: ${profile.three_month_goal}`);
+    }
+    if (profile.available_time) {
+      lines.push(`- 1日に使える時間: ${availableTimeLabel[profile.available_time]}`);
+    }
+    if (profile.coach_preferences.length > 0) {
+      lines.push(`- AIコーチに求めること: ${profile.coach_preferences.join("、")}`);
+    }
+    lines.push("");
+  }
 
   lines.push(`事業名: ${business.name}`);
   lines.push(`業種: ${business.industry ?? "未設定"}`);
