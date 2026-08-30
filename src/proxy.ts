@@ -13,6 +13,7 @@ const PROTECTED_PATHS = [
   "/coach",
   "/settings",
   "/onboarding",
+  "/welcome",
   "/update-password",
 ];
 
