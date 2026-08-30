@@ -48,3 +48,4 @@ npm run lint    # ESLint実行
 - Supabase（DB / Auth）
 - 各画面のCRUD・データ永続化
 - AI Business Coach（AI API接続）
+Vercel deployment test
