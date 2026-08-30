@@ -5,7 +5,8 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "./server";
 import { getCurrentBusiness } from "./business";
 import { getCurrentUser } from "./get-current-user";
-import type { TaskCategory, TaskPriority } from "./types";
+import { DEFAULT_TASK_CATEGORY } from "../task-categories";
+import type { TaskPriority } from "./types";
 
 export interface TaskActionState {
   error: string | null;
@@ -13,17 +14,10 @@ export interface TaskActionState {
 }
 
 const TASK_PRIORITIES: TaskPriority[] = ["HIGH", "MEDIUM", "LOW"];
-const TASK_CATEGORIES: TaskCategory[] = [
-  "商品",
-  "マーケティング",
-  "営業",
-  "資金調達",
-  "運営",
-  "その他",
-];
 
 const MAX_TITLE_LENGTH = 100;
 const MAX_DESCRIPTION_LENGTH = 500;
+const MAX_CATEGORY_LENGTH = 50;
 
 interface ParsedTaskInput {
   title: string;
@@ -59,10 +53,15 @@ function validateTaskInput(input: ParsedTaskInput): string | null {
   if (!TASK_PRIORITIES.includes(input.priority as TaskPriority)) {
     return "優先度を選択してください。";
   }
-  if (!TASK_CATEGORIES.includes(input.category as TaskCategory)) {
-    return "カテゴリーを選択してください。";
+  if (input.category.length > MAX_CATEGORY_LENGTH) {
+    return `カテゴリーは${MAX_CATEGORY_LENGTH}文字以内で入力してください。`;
   }
   return null;
+}
+
+/** カテゴリーが空欄の場合、DBのNOT NULL制約に合わせて既定値を補う。 */
+function resolveCategory(rawCategory: string): string {
+  return rawCategory.trim() || DEFAULT_TASK_CATEGORY;
 }
 
 /**
@@ -98,7 +97,7 @@ export async function createTask(
     description: parsed.description || null,
     due_date: parsed.dueDate || null,
     priority: parsed.priority as TaskPriority,
-    category: parsed.category as TaskCategory,
+    category: resolveCategory(parsed.category),
   });
 
   if (error) {
@@ -144,7 +143,7 @@ export async function updateTask(
       description: parsed.description || null,
       due_date: parsed.dueDate || null,
       priority: parsed.priority as TaskPriority,
-      category: parsed.category as TaskCategory,
+      category: resolveCategory(parsed.category),
     })
     .eq("id", taskId)
     .select("id");

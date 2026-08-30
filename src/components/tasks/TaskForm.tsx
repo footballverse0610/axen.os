@@ -2,6 +2,8 @@
 
 import { useActionState, useEffect } from "react";
 import { createTask, updateTask, type TaskActionState } from "@/lib/supabase/task-actions";
+import { CategoryPicker } from "@/components/ui/CategoryPicker";
+import { DEFAULT_TASK_CATEGORY, TASK_CATEGORY_SUGGESTIONS } from "@/lib/task-categories";
 import type { Task } from "@/lib/supabase/types";
 
 const PRIORITY_OPTIONS = [
@@ -9,8 +11,6 @@ const PRIORITY_OPTIONS = [
   { value: "MEDIUM", label: "MEDIUM" },
   { value: "LOW", label: "LOW" },
 ];
-
-const CATEGORY_OPTIONS = ["商品", "マーケティング", "営業", "資金調達", "運営", "その他"];
 
 const initialState: TaskActionState = { error: null };
 
@@ -62,42 +62,35 @@ export function TaskForm({ task, onDone }: { task?: Task; onDone: () => void }) 
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="priority" className="text-xs font-medium text-muted-foreground">
-            優先度
-          </label>
-          <select
-            id="priority"
-            name="priority"
-            defaultValue={task?.priority ?? "MEDIUM"}
-            className={fieldClass}
-          >
-            {PRIORITY_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-        </div>
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor="priority" className="text-xs font-medium text-muted-foreground">
+          優先度
+        </label>
+        <select
+          id="priority"
+          name="priority"
+          defaultValue={task?.priority ?? "MEDIUM"}
+          className={fieldClass}
+        >
+          {PRIORITY_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+      </div>
 
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="category" className="text-xs font-medium text-muted-foreground">
-            カテゴリー
-          </label>
-          <select
-            id="category"
-            name="category"
-            defaultValue={task?.category ?? "その他"}
-            className={fieldClass}
-          >
-            {CATEGORY_OPTIONS.map((opt) => (
-              <option key={opt} value={opt}>
-                {opt}
-              </option>
-            ))}
-          </select>
-        </div>
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor="category" className="text-xs font-medium text-muted-foreground">
+          カテゴリー
+        </label>
+        <CategoryPicker
+          id="category"
+          name="category"
+          defaultValue={task?.category ?? DEFAULT_TASK_CATEGORY}
+          suggestions={TASK_CATEGORY_SUGGESTIONS}
+          placeholder="例：マーケティング"
+        />
       </div>
 
       <div className="flex flex-col gap-1.5">

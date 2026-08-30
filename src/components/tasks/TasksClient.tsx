@@ -1,7 +1,7 @@
 "use client";
 
 import { ListChecks, Pencil, Plus, Trash2 } from "lucide-react";
-import { useState, useTransition } from "react";
+import { useOptimistic, useState, useTransition } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { Modal } from "@/components/ui/Modal";
@@ -19,9 +19,22 @@ type ModalState =
 
 export function TasksClient({ tasks }: { tasks: Task[] }) {
   const [modal, setModal] = useState<ModalState>(null);
+  // チェックを押した瞬間にUIへ反映するための楽観的更新。サーバーへの保存が
+  // 完了(revalidatePath)する前に完了状態を切り替える。保存が失敗した場合は
+  // tasksプロパティ(サーバーの実データ)が変わらないため、Transition終了時に
+  // 自動的に元の状態へ戻る。
+  const [optimisticTasks, applyOptimisticToggle] = useOptimistic(
+    tasks,
+    (state: Task[], patch: { taskId: string; done: boolean }) =>
+      state.map((t) =>
+        t.id === patch.taskId
+          ? { ...t, done: patch.done, completed_at: patch.done ? new Date().toISOString() : null }
+          : t,
+      ),
+  );
 
-  const openTasks = tasks.filter((t) => !t.done);
-  const doneTasks = tasks.filter((t) => t.done);
+  const openTasks = optimisticTasks.filter((t) => !t.done);
+  const doneTasks = optimisticTasks.filter((t) => t.done);
 
   if (tasks.length === 0) {
     return (
@@ -78,6 +91,7 @@ export function TasksClient({ tasks }: { tasks: Task[] }) {
             <TaskRow
               key={task.id}
               task={task}
+              applyOptimisticToggle={applyOptimisticToggle}
               onEdit={() => setModal({ type: "edit", task })}
               onDelete={() => setModal({ type: "delete", task })}
             />
@@ -100,6 +114,7 @@ export function TasksClient({ tasks }: { tasks: Task[] }) {
               <TaskRow
                 key={task.id}
                 task={task}
+                applyOptimisticToggle={applyOptimisticToggle}
                 onEdit={() => setModal({ type: "edit", task })}
                 onDelete={() => setModal({ type: "delete", task })}
               />
@@ -129,10 +144,12 @@ export function TasksClient({ tasks }: { tasks: Task[] }) {
 
 function TaskRow({
   task,
+  applyOptimisticToggle,
   onEdit,
   onDelete,
 }: {
   task: Task;
+  applyOptimisticToggle: (patch: { taskId: string; done: boolean }) => void;
   onEdit: () => void;
   onDelete: () => void;
 }) {
@@ -141,8 +158,10 @@ function TaskRow({
 
   function handleToggle() {
     setToggleError(null);
+    const nextDone = !task.done;
     startTransition(async () => {
-      const result = await toggleTaskDone(task.id, !task.done);
+      applyOptimisticToggle({ taskId: task.id, done: nextDone });
+      const result = await toggleTaskDone(task.id, nextDone);
       if (result.error) {
         setToggleError(result.error);
       }

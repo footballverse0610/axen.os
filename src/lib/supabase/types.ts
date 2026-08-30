@@ -55,7 +55,12 @@ export interface BusinessIdea {
 }
 
 export type TaskPriority = "HIGH" | "MEDIUM" | "LOW";
-export type TaskCategory = "商品" | "マーケティング" | "営業" | "資金調達" | "運営" | "その他";
+/**
+ * 自由入力(supabase/migrations/003_task_category_freetext.sql)。
+ * 以前はDBのtask_category enumに対応した固定6値のunion型だったが、
+ * カテゴリー自由入力化に伴いstringへ変更した。
+ */
+export type TaskCategory = string;
 
 export interface Task {
   id: string;

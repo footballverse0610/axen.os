@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "./server";
 import { getCurrentBusiness } from "./business";
 import { getCurrentUser } from "./get-current-user";
+import { recalcLinkedGoals } from "./goal-sync";
 
 export interface FinanceActionState {
   error: string | null;
@@ -134,7 +135,12 @@ export async function createTransaction(
     }
   }
 
+  // revenue/profit/sales_count型の目標があれば、今回登録した取引を反映して
+  // current_valueを再計算する(Goalsの手動二重入力を避けるための自動連携)。
+  await recalcLinkedGoals(business.id);
+
   revalidatePath("/finance");
+  revalidatePath("/goals");
   revalidatePath("/");
   return { error: null, success: true };
 }
@@ -167,6 +173,7 @@ export async function updateTransaction(
 
   const amount = Number(parsed.amountRaw);
   const supabase = await createClient();
+  let businessId: string | null = null;
 
   if (parsed.kind === "sale") {
     const quantity = parsed.quantityRaw === "" ? 1 : Number(parsed.quantityRaw);
@@ -181,7 +188,7 @@ export async function updateTransaction(
         sold_on: parsed.date,
       })
       .eq("id", entryId)
-      .select("id");
+      .select("id, business_id");
 
     if (error) {
       console.error("updateTransaction(sale) failed", error);
@@ -190,6 +197,7 @@ export async function updateTransaction(
     if (!data || data.length === 0) {
       return { error: "対象の取引が見つかりませんでした。" };
     }
+    businessId = data[0].business_id;
   } else {
     const { data, error } = await supabase
       .from("expenses")
@@ -201,7 +209,7 @@ export async function updateTransaction(
         spent_on: parsed.date,
       })
       .eq("id", entryId)
-      .select("id");
+      .select("id, business_id");
 
     if (error) {
       console.error("updateTransaction(expense) failed", error);
@@ -210,9 +218,15 @@ export async function updateTransaction(
     if (!data || data.length === 0) {
       return { error: "対象の取引が見つかりませんでした。" };
     }
+    businessId = data[0].business_id;
+  }
+
+  if (businessId) {
+    await recalcLinkedGoals(businessId);
   }
 
   revalidatePath("/finance");
+  revalidatePath("/goals");
   revalidatePath("/");
   return { error: null, success: true };
 }
@@ -237,7 +251,11 @@ export async function deleteTransaction(
 
   const supabase = await createClient();
   const table = kind === "sale" ? "sales" : "expenses";
-  const { data, error } = await supabase.from(table).delete().eq("id", entryId).select("id");
+  const { data, error } = await supabase
+    .from(table)
+    .delete()
+    .eq("id", entryId)
+    .select("id, business_id");
 
   if (error) {
     console.error("deleteTransaction failed", error);
@@ -247,7 +265,10 @@ export async function deleteTransaction(
     return { error: "対象の取引が見つかりませんでした。" };
   }
 
+  await recalcLinkedGoals(data[0].business_id);
+
   revalidatePath("/finance");
+  revalidatePath("/goals");
   revalidatePath("/");
   return { error: null };
 }

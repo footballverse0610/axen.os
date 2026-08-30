@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "./server";
 import { getCurrentBusiness } from "./business";
 import { getCurrentUser } from "./get-current-user";
+import { recalcLinkedGoals } from "./goal-sync";
 import type { GoalStatus, GoalType } from "./types";
 
 export interface GoalActionState {
@@ -129,6 +130,10 @@ export async function createGoal(
     return { error: "目標の作成に失敗しました。時間をおいて再度お試しください。" };
   }
 
+  // revenue/profit/sales_count型の場合、フォームの現在値をFinanceの実データで
+  // 上書きする(作成時点で既存の売上・経費があれば、それを反映した値にする)。
+  await recalcLinkedGoals(business.id);
+
   revalidatePath("/goals");
   revalidatePath("/");
   return { error: null, success: true };
@@ -174,7 +179,7 @@ export async function updateGoal(
       status: parsed.status as GoalStatus,
     })
     .eq("id", goalId)
-    .select("id");
+    .select("id, business_id");
 
   if (error) {
     console.error("updateGoal failed", error);
@@ -185,9 +190,59 @@ export async function updateGoal(
     return { error: "対象の目標が見つかりませんでした。" };
   }
 
+  // goal_type/start_date/target_dateの変更が計算結果に影響するため再計算する。
+  await recalcLinkedGoals(data[0].business_id);
+
   revalidatePath("/goals");
   revalidatePath("/");
   return { error: null, success: true };
+}
+
+/**
+ * Goalカードの+/-ボタン・現在値の直接入力から呼ばれる、current_valueのみを
+ * 更新する軽量なServer Action。フルの編集フォーム(updateGoal)と違いtitle等の
+ * 再入力を必要とせず、素早い調整に使う。
+ *
+ * revenue/profit/sales_count型(Financeと自動連携)にも適用できる。この場合、
+ * 手動調整した値はそのまま保持されるが、次にFinanceの取引が作成・更新・削除
+ * された時点でrecalcLinkedGoals()により自動計算値に上書きされる
+ * (このセッションの実装方針として、自動計算タイプにも手動での一時的な
+ * 上書きを許可している)。
+ */
+export async function adjustGoalCurrentValue(
+  goalId: string,
+  newValue: number,
+): Promise<{ error: string | null }> {
+  const user = await getCurrentUser();
+  if (!user) {
+    redirect("/login");
+  }
+
+  if (!goalId) {
+    return { error: "対象の目標が見つかりませんでした。" };
+  }
+  if (!Number.isFinite(newValue) || newValue < 0) {
+    return { error: "現在値は0以上の数値を入力してください。" };
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("goals")
+    .update({ current_value: newValue })
+    .eq("id", goalId)
+    .select("id");
+
+  if (error) {
+    console.error("adjustGoalCurrentValue failed", error);
+    return { error: "現在値の更新に失敗しました。時間をおいて再度お試しください。" };
+  }
+  if (!data || data.length === 0) {
+    return { error: "対象の目標が見つかりませんでした。" };
+  }
+
+  revalidatePath("/goals");
+  revalidatePath("/");
+  return { error: null };
 }
 
 /**
