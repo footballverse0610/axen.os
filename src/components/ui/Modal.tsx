@@ -28,8 +28,8 @@ export function Modal({
         onClick={onClose}
         className="absolute inset-0 cursor-default"
       />
-      <div className="relative w-full max-w-sm rounded-2xl border border-border bg-surface p-6 shadow-2xl">
-        <div className="mb-4 flex items-center justify-between">
+      <div className="relative flex max-h-[85vh] w-full max-w-sm flex-col rounded-2xl border border-border bg-surface shadow-2xl">
+        <div className="flex shrink-0 items-center justify-between px-6 pt-6">
           <h2 className="text-sm font-semibold text-foreground">{title}</h2>
           <button
             type="button"
@@ -40,7 +40,7 @@ export function Modal({
             <X className="h-4 w-4" aria-hidden />
           </button>
         </div>
-        {children}
+        <div className="mt-4 min-h-0 overflow-y-auto px-6 pb-6">{children}</div>
       </div>
     </div>
   );

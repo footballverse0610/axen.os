@@ -28,7 +28,7 @@ export function GoalForm({ goal, onDone }: { goal?: Goal; onDone: () => void }) 
   }, [state.success, onDone]);
 
   return (
-    <form action={formAction} className="flex max-h-[70vh] flex-col gap-4 overflow-y-auto pr-1">
+    <form action={formAction} className="flex flex-col gap-4">
       {goal ? <input type="hidden" name="goalId" value={goal.id} /> : null}
 
       <div className="flex flex-col gap-1.5">

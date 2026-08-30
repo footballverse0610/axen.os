@@ -7,6 +7,8 @@ import {
   type FinanceActionState,
   type TransactionKind,
 } from "@/lib/supabase/finance-actions";
+import { CategoryPicker } from "@/components/ui/CategoryPicker";
+import { EXPENSE_CATEGORY_SUGGESTIONS, SALE_CATEGORY_SUGGESTIONS } from "@/lib/finance-categories";
 import type { FinanceEntry } from "./FinanceClient";
 
 const initialState: FinanceActionState = { error: null };
@@ -105,15 +107,13 @@ export function TransactionForm({
         <label htmlFor="category" className="text-xs font-medium text-muted-foreground">
           カテゴリー <span className="text-red-400">*</span>
         </label>
-        <input
+        <CategoryPicker
           id="category"
           name="category"
-          type="text"
-          required
-          maxLength={50}
           defaultValue={category}
-          className={fieldClass}
-          placeholder={isSale ? "例：商品売上" : "例：マーケティング"}
+          required
+          suggestions={isSale ? SALE_CATEGORY_SUGGESTIONS : EXPENSE_CATEGORY_SUGGESTIONS}
+          placeholder={isSale ? "例：商品売上" : "例：広告費"}
         />
       </div>
 
