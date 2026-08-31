@@ -54,12 +54,3 @@ export function calcLinkedGoalValue(
   }
   return 0;
 }
-
-/** 目標カードの+/-ボタンの増減幅を、目標値の桁数に応じたきりのよい数値で提案する */
-export function suggestGoalStep(targetValue: number): number {
-  if (targetValue >= 100000) return 10000;
-  if (targetValue >= 10000) return 1000;
-  if (targetValue >= 1000) return 100;
-  if (targetValue >= 100) return 10;
-  return 1;
-}
