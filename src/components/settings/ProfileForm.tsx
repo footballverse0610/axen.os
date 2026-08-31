@@ -1,11 +1,8 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import {
-  updateProfile,
-  AVATAR_ICON_OPTIONS,
-  type ProfileActionState,
-} from "@/lib/supabase/profile-actions";
+import { updateProfile, type ProfileActionState } from "@/lib/supabase/profile-actions";
+import { AVATAR_ICON_OPTIONS } from "@/lib/avatar-icons";
 import type { Profile } from "@/lib/supabase/types";
 
 const initialState: ProfileActionState = { error: null };
