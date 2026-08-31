@@ -26,9 +26,9 @@ export interface DashboardData {
  * ログに残した上で空配列にフォールバックする(部分的な障害でDashboard全体が
  * 落ちないようにするため)。
  */
-export async function getDashboardData(): Promise<DashboardData | null> {
+export async function getDashboardData(preloadedBusiness?: Business): Promise<DashboardData | null> {
   try {
-    return await fetchDashboardData();
+    return await fetchDashboardData(preloadedBusiness);
   } catch (err) {
     // redirect()/notFound()や、ビルド時の静的化判定(DYNAMIC_SERVER_USAGE)など、
     // Next.jsが制御フローとして送出する特殊なエラーは digest プロパティを持つ。
@@ -41,8 +41,8 @@ export async function getDashboardData(): Promise<DashboardData | null> {
   }
 }
 
-async function fetchDashboardData(): Promise<DashboardData | null> {
-  const business = await getCurrentBusiness();
+async function fetchDashboardData(preloadedBusiness?: Business): Promise<DashboardData | null> {
+  const business = preloadedBusiness ?? (await getCurrentBusiness());
   if (!business) {
     return null;
   }

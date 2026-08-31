@@ -59,9 +59,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "事業情報が見つかりません" }, { status: 400 });
   }
 
+  // 互いに依存しない3つの読み取りを先に開始し(呼び出した時点で並行に走る)、
+  // 元のコードと同じ順序・同じエラーメッセージで個別にawaitする。直列に
+  // 1つずつawaitしていた場合と比べ、AI応答の生成が始まるまでの待ち時間を
+  // 短縮できる(それぞれのDB往復がここで並行に実行されるため)。
+  const todayCountPromise = countTodayUserMessages(business.id);
+  const historyPromise = getCoachMessages(business.id);
+  const contextPromise = getCoachContext(business);
+
   let todayCount: number;
   try {
-    todayCount = await countTodayUserMessages(business.id);
+    todayCount = await todayCountPromise;
   } catch {
     return NextResponse.json({ error: "利用状況の確認に失敗しました" }, { status: 500 });
   }
@@ -74,11 +82,11 @@ export async function POST(request: Request) {
     );
   }
 
-  const history = await getCoachMessages(business.id);
+  const history = await historyPromise;
 
   let context;
   try {
-    context = await getCoachContext();
+    context = await contextPromise;
   } catch {
     return NextResponse.json({ error: "事業データの取得に失敗しました" }, { status: 500 });
   }
