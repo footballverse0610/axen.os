@@ -14,10 +14,21 @@ export const CURRENT_BUSINESS_COOKIE = "current_business_id";
  */
 export async function getUserBusinesses(): Promise<Business[]> {
   const supabase = await createClient();
+  const {
+    data: { user: authUser },
+  } = await supabase.auth.getUser();
   const { data, error } = await supabase
     .from("businesses")
     .select("*")
     .order("created_at", { ascending: true });
+
+  // TEMP DEBUG(調査用、原因特定後に削除する)
+  console.log("[DEBUG getUserBusinesses]", {
+    authUserId: authUser?.id ?? null,
+    error: error ? { code: error.code, message: error.message, details: error.details } : null,
+    dataLength: data?.length ?? 0,
+    data: (data ?? []).map((b) => ({ id: b.id, name: b.name, user_id: b.user_id })),
+  });
 
   if (error) {
     console.error("getUserBusinesses failed", error);
