@@ -30,6 +30,15 @@ export default async function MainLayout({ children }: LayoutProps<"/">) {
   // 再問い合わせ(DB往復)を避ける。
   const currentBusiness = (await getCurrentBusiness(businesses)) ?? businesses[0];
 
+  // TEMP DEBUG(調査用、原因特定後に削除する)
+  console.log("[DEBUG MainLayout]", {
+    userId: user.id,
+    businessesCount: businesses.length,
+    businessIds: businesses.map((b) => b.id),
+    currentBusinessId: currentBusiness.id,
+    currentBusinessName: currentBusiness.name,
+  });
+
   return (
     <div className="flex flex-1">
       <Sidebar />
