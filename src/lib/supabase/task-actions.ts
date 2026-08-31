@@ -204,6 +204,56 @@ export async function toggleTaskDone(
 }
 
 /**
+ * 「何から始める？」診断(start-guide)の提案から、タイトル・カテゴリーのみで
+ * タスクを1タップ追加する軽量版。優先度は既定でMEDIUM、期限・説明は空にする
+ * (詳細な調整は/tasksの通常編集フォームで行う想定)。createTaskと同じ
+ * tasksテーブル・business_id/user_id解決・RLSをそのまま利用するだけで、
+ * 新しいタスク管理の仕組みは作らない。
+ */
+export async function quickAddTask(
+  title: string,
+  category: string,
+): Promise<{ error: string | null }> {
+  const user = await getCurrentUser();
+  if (!user) {
+    redirect("/login");
+  }
+
+  const trimmedTitle = title.trim();
+  if (!trimmedTitle) {
+    return { error: "タイトルを入力してください。" };
+  }
+  if (trimmedTitle.length > MAX_TITLE_LENGTH) {
+    return { error: `タイトルは${MAX_TITLE_LENGTH}文字以内で入力してください。` };
+  }
+
+  const business = await getCurrentBusiness();
+  if (!business) {
+    return { error: "事業が見つかりませんでした。" };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("tasks").insert({
+    business_id: business.id,
+    user_id: user.id,
+    title: trimmedTitle,
+    description: null,
+    due_date: null,
+    priority: "MEDIUM" satisfies TaskPriority,
+    category: resolveCategory(category),
+  });
+
+  if (error) {
+    console.error("quickAddTask failed", error);
+    return { error: "タスクの追加に失敗しました。時間をおいて再度お試しください。" };
+  }
+
+  revalidatePath("/tasks");
+  revalidatePath("/");
+  return { error: null };
+}
+
+/**
  * タスクを削除する。受け取るのは taskId のみ。RLS(DELETE:
  * auth.uid() = user_id)により、自分が所有するタスク以外は削除できない。
  */

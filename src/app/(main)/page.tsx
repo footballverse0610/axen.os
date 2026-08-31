@@ -5,6 +5,7 @@ import { Bar } from "@/components/ui/Bar";
 import { Card } from "@/components/ui/Card";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { StatCard } from "@/components/ui/StatCard";
+import { StartGuideCard } from "@/components/home/StartGuideCard";
 import { formatYen } from "@/lib/finance";
 import { stageLabel, stageTone } from "@/lib/idea-stage";
 import { priorityTone } from "@/lib/task-priority";
@@ -81,6 +82,10 @@ export default async function DashboardPage() {
         <h2 className="mt-1 text-xl font-semibold tracking-tight text-foreground">
           {business.name}の状態
         </h2>
+      </section>
+
+      <section>
+        <StartGuideCard />
       </section>
 
       <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
