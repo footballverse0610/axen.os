@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "./server";
 import { getCurrentUser } from "./get-current-user";
+import { AVATAR_ICON_OPTIONS } from "../avatar-icons";
 
 export interface ProfileActionState {
   error: string | null;
@@ -10,27 +11,6 @@ export interface ProfileActionState {
 }
 
 const MAX_DISPLAY_NAME_LENGTH = 30;
-
-/**
- * プロフィールアイコンの選択肢(絵文字)。既存のSupabase Storage等の外部
- * アップロード基盤はこのコードベースに存在しないため、新しい外部サービスを
- * 追加せずに済む「絵文字1文字を選ぶ」方式にする。avatar_url列はURL用に
- * 見える名前だが、画像URLとしては使わず、選んだ絵文字をそのまま保存する
- * (Header等の表示側もURLとしてではなく、そのままテキストとして表示する)。
- */
-export const AVATAR_ICON_OPTIONS = [
-  "😀",
-  "😎",
-  "🚀",
-  "🌱",
-  "🔥",
-  "💡",
-  "🎯",
-  "☕",
-  "🐣",
-  "🦊",
-] as const;
-export type AvatarIcon = (typeof AVATAR_ICON_OPTIONS)[number];
 
 function validateDisplayName(name: string): string | null {
   if (name.length > MAX_DISPLAY_NAME_LENGTH) {
