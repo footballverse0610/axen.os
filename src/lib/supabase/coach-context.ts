@@ -3,7 +3,7 @@ import { getDashboardData, type DashboardData } from "./dashboard";
 import { getCurrentProfile } from "./profile";
 import { calcBusinessSummary, calcGoalProgress } from "./finance";
 import { currentStateLabel, availableTimeLabel } from "../onboarding-options";
-import type { Profile } from "./types";
+import type { Business, Profile } from "./types";
 
 /**
  * DashboardDataを拡張(交差型)する形でprofileを追加する。既存のcontext.business
@@ -19,9 +19,14 @@ export type CoachContext = DashboardData & { profile: Profile | null };
  * を参照する。business_id/user_idはgetDashboardData/getCurrentProfile内部の
  * getCurrentBusiness()・getCurrentUser()(サーバー側・RLS経由)からのみ取得され、
  * クライアント入力は一切使わない。
+ *
+ * preloadedBusiness: 呼び出し元(/api/coach/route.ts)が既にgetCurrentBusiness()
+ * 済みの場合に渡すと、getDashboardData内部での再取得を避けられる
+ * (Route Handlerはpage.tsx/layout.tsxと同じReactレンダーツリーに属さないため、
+ * React cache()による自動的な重複排除に頼らず、明示的に値を渡す)。
  */
-export async function getCoachContext(): Promise<CoachContext | null> {
-  const dashboardData = await getDashboardData();
+export async function getCoachContext(preloadedBusiness?: Business): Promise<CoachContext | null> {
+  const dashboardData = await getDashboardData(preloadedBusiness);
   if (!dashboardData) {
     return null;
   }

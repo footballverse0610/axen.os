@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { cookies } from "next/headers";
 import { createClient } from "./server";
 import type { Business } from "./types";
@@ -11,8 +12,13 @@ export const CURRENT_BUSINESS_COOKIE = "current_business_id";
  * business_id/user_idを引数で受け取らない設計にしているのは、
  * 「他ユーザーのbusiness_idを渡されて操作する」経路を作らないため。
  * 常にRLS(businesses.user_id = auth.uid())が絞り込みを行う。
+ *
+ * React cache()で1リクエスト内の呼び出しをメモ化する。(main)/layout.tsxと
+ * 各page.tsx(dashboard/goals/finance/tasks/ideas/coach等)がそれぞれ
+ * getCurrentBusiness()経由でこの関数を呼ぶため、cache()が無いと同じ
+ * businessesクエリが1回のページ表示で何度も走ってしまう。
  */
-export async function getUserBusinesses(): Promise<Business[]> {
+export const getUserBusinesses = cache(async (): Promise<Business[]> => {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("businesses")
@@ -25,7 +31,7 @@ export async function getUserBusinesses(): Promise<Business[]> {
   }
 
   return data ?? [];
-}
+});
 
 /**
  * Cookieに保存された「選択中business_id」の生値を返す。

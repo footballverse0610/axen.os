@@ -31,3 +31,42 @@ body {
   background: var(--background);
   color: var(--foreground);
 }
+
+/*
+ * タップした瞬間に反応が返るようにするための共通スタイル。
+ * - iOS/Android標準のタップハイライト(遅れて出るグレーのフラッシュ)を消し、
+ *   代わりに即座に反応するscale()の押し込み表現に統一する。
+ * - touch-actionでタップ後の余分な遅延判定を減らす。
+ * 色・レイアウト・機能は変更しない、視覚フィードバックのみの追加。
+ */
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button,
+a,
+[role="button"] {
+  touch-action: manipulation;
+}
+
+button:not(:disabled),
+a,
+[role="button"]:not([aria-disabled="true"]) {
+  transition: transform 100ms ease-out;
+}
+
+@media (hover: none) {
+  button:not(:disabled):active,
+  a:active,
+  [role="button"]:not([aria-disabled="true"]):active {
+    transform: scale(0.97);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button:not(:disabled),
+  a,
+  [role="button"] {
+    transition: none;
+  }
+}

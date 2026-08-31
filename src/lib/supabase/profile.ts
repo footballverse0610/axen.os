@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { createClient } from "./server";
 import type { Profile } from "./types";
 
@@ -11,8 +12,11 @@ import type { Profile } from "./types";
  * profilesはensureProfileExists()によりログイン/サインアップ時に
  * 作成される想定だが、未作成でも画面が壊れないようnullを返す
  * (display_nameは未設定表示にフォールバックする)。
+ *
+ * React cache()で1リクエスト内の呼び出しをメモ化する((main)/layout.tsxと
+ * settings/page.tsx等が同一リクエスト内でそれぞれ呼ぶため)。
  */
-export async function getCurrentProfile(): Promise<Profile | null> {
+export const getCurrentProfile = cache(async (): Promise<Profile | null> => {
   const supabase = await createClient();
   const { data, error } = await supabase.from("profiles").select("*").maybeSingle();
 
@@ -22,4 +26,4 @@ export async function getCurrentProfile(): Promise<Profile | null> {
   }
 
   return data;
-}
+});
