@@ -5,7 +5,8 @@ import { useOptimistic, useState, useTransition } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { Modal } from "@/components/ui/Modal";
-import { priorityTone } from "@/lib/task-priority";
+import { priorityLabel, priorityOrder } from "@/lib/task-priority";
+import { calcDueUrgency, dueUrgencyLabel, dueUrgencyTone } from "@/lib/task-due";
 import { toggleTaskDone } from "@/lib/supabase/task-actions";
 import type { Task } from "@/lib/supabase/types";
 import { TaskForm } from "./TaskForm";
@@ -16,6 +17,23 @@ type ModalState =
   | { type: "edit"; task: Task }
   | { type: "delete"; task: Task }
   | null;
+
+/**
+ * 未完了Taskの基本ソート順: 1.優先度が高い順 2.期限が近い順
+ * 3.期限なしは最後。既存のDB側ソート(due_date昇順)を尊重しつつ、
+ * 優先度を最優先の軸として追加する(クライアント側でのみ並べ替え、
+ * 取得クエリ・business_id分離には手を加えない)。
+ */
+function compareOpenTasks(a: Task, b: Task): number {
+  const priorityDiff = priorityOrder.indexOf(a.priority) - priorityOrder.indexOf(b.priority);
+  if (priorityDiff !== 0) return priorityDiff;
+  if (a.due_date && b.due_date) {
+    return a.due_date < b.due_date ? -1 : a.due_date > b.due_date ? 1 : 0;
+  }
+  if (a.due_date) return -1;
+  if (b.due_date) return 1;
+  return 0;
+}
 
 export function TasksClient({ tasks }: { tasks: Task[] }) {
   const [modal, setModal] = useState<ModalState>(null);
@@ -33,8 +51,16 @@ export function TasksClient({ tasks }: { tasks: Task[] }) {
       ),
   );
 
-  const openTasks = optimisticTasks.filter((t) => !t.done);
+  const openTasks = optimisticTasks.filter((t) => !t.done).sort(compareOpenTasks);
   const doneTasks = optimisticTasks.filter((t) => t.done);
+
+  // 優先度ごとにグループ化する(未完了のみ。完了済みは通常のリストのまま)。
+  const openByPriority = priorityOrder
+    .map((priority) => ({
+      priority,
+      tasks: openTasks.filter((t) => t.priority === priority),
+    }))
+    .filter((group) => group.tasks.length > 0);
 
   if (tasks.length === 0) {
     return (
@@ -86,22 +112,44 @@ export function TasksClient({ tasks }: { tasks: Task[] }) {
         <h2 className="mb-3 text-sm font-semibold text-foreground">
           未完了 ({openTasks.length})
         </h2>
-        <div className="flex flex-col gap-2">
-          {openTasks.map((task) => (
-            <TaskRow
-              key={task.id}
-              task={task}
-              applyOptimisticToggle={applyOptimisticToggle}
-              onEdit={() => setModal({ type: "edit", task })}
-              onDelete={() => setModal({ type: "delete", task })}
-            />
-          ))}
-          {openTasks.length === 0 ? (
-            <Card className="text-sm text-muted-foreground">
-              未完了のタスクはありません。
-            </Card>
-          ) : null}
-        </div>
+        {openTasks.length === 0 ? (
+          <Card className="text-sm text-muted-foreground">
+            未完了のタスクはありません。
+          </Card>
+        ) : (
+          <div className="flex flex-col gap-4">
+            {openByPriority.map((group) => (
+              <div key={group.priority}>
+                <div className="mb-2 flex items-center gap-1.5">
+                  <span
+                    className={`h-1.5 w-1.5 rounded-full ${
+                      group.priority === "HIGH"
+                        ? "bg-red-400"
+                        : group.priority === "MEDIUM"
+                          ? "bg-amber-400"
+                          : "bg-muted-foreground"
+                    }`}
+                    aria-hidden
+                  />
+                  <span className="text-xs font-semibold text-muted-foreground">
+                    {priorityLabel[group.priority]} ({group.tasks.length})
+                  </span>
+                </div>
+                <div className="flex flex-col gap-2">
+                  {group.tasks.map((task) => (
+                    <TaskRow
+                      key={task.id}
+                      task={task}
+                      applyOptimisticToggle={applyOptimisticToggle}
+                      onEdit={() => setModal({ type: "edit", task })}
+                      onDelete={() => setModal({ type: "delete", task })}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       {doneTasks.length > 0 ? (
@@ -155,6 +203,8 @@ function TaskRow({
 }) {
   const [isPending, startTransition] = useTransition();
   const [toggleError, setToggleError] = useState<string | null>(null);
+  const urgency = calcDueUrgency(task.due_date);
+  const urgencyText = dueUrgencyLabel[urgency];
 
   function handleToggle() {
     setToggleError(null);
@@ -169,7 +219,7 @@ function TaskRow({
   }
 
   return (
-    <Card className="flex items-start gap-3 py-3">
+    <Card className={`flex items-start gap-3 py-3 ${task.done ? "opacity-60" : ""}`}>
       <button
         type="button"
         role="checkbox"
@@ -199,7 +249,9 @@ function TaskRow({
           <p className="mt-0.5 text-xs text-muted-foreground">{task.description}</p>
         ) : null}
         <div className="mt-2 flex flex-wrap items-center gap-2">
-          <Badge tone={priorityTone[task.priority]}>{task.priority}</Badge>
+          {!task.done && urgencyText ? (
+            <Badge tone={dueUrgencyTone[urgency]}>{urgencyText}</Badge>
+          ) : null}
           <span className="text-xs text-muted-foreground">{task.category}</span>
           {task.due_date ? (
             <span className="text-xs text-muted-foreground">期限: {task.due_date}</span>

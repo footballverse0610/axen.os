@@ -1,13 +1,13 @@
 "use client";
 
 import { Minus, Plus, Pencil, Target, Trash2 } from "lucide-react";
-import { useOptimistic, useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { Bar } from "@/components/ui/Bar";
 import { Card } from "@/components/ui/Card";
 import { Modal } from "@/components/ui/Modal";
 import { goalStatusLabel, goalStatusTone, goalTypeLabel } from "@/lib/goal-status";
-import { calcGoalProgress, suggestGoalStep } from "@/lib/supabase/finance";
+import { calcGoalProgress } from "@/lib/supabase/finance";
 import { adjustGoalCurrentValue } from "@/lib/supabase/goal-actions";
 import type { Goal } from "@/lib/supabase/types";
 import { GoalForm } from "./GoalForm";
@@ -21,17 +21,9 @@ type ModalState =
 
 export function GoalsClient({ goals }: { goals: Goal[] }) {
   const [modal, setModal] = useState<ModalState>(null);
-  // +/-・直接入力での現在値変更を即座にUIへ反映するための楽観的更新。
-  // 保存が失敗した場合はgoalsプロパティ(サーバーの実データ)が変わらないため、
-  // Transition終了時に自動的に元の値へ戻る。
-  const [optimisticGoals, applyOptimisticValue] = useOptimistic(
-    goals,
-    (state: Goal[], patch: { goalId: string; currentValue: number }) =>
-      state.map((g) => (g.id === patch.goalId ? { ...g, current_value: patch.currentValue } : g)),
-  );
 
-  const activeGoals = optimisticGoals.filter((g) => g.status === "active");
-  const otherGoals = optimisticGoals.filter((g) => g.status !== "active");
+  const activeGoals = goals.filter((g) => g.status === "active");
+  const otherGoals = goals.filter((g) => g.status !== "active");
 
   if (goals.length === 0) {
     return (
@@ -88,7 +80,6 @@ export function GoalsClient({ goals }: { goals: Goal[] }) {
             <GoalCard
               key={goal.id}
               goal={goal}
-              applyOptimisticValue={applyOptimisticValue}
               onEdit={() => setModal({ type: "edit", goal })}
               onDelete={() => setModal({ type: "delete", goal })}
             />
@@ -111,7 +102,6 @@ export function GoalsClient({ goals }: { goals: Goal[] }) {
               <GoalCard
                 key={goal.id}
                 goal={goal}
-                applyOptimisticValue={applyOptimisticValue}
                 onEdit={() => setModal({ type: "edit", goal })}
                 onDelete={() => setModal({ type: "delete", goal })}
               />
@@ -139,49 +129,142 @@ export function GoalsClient({ goals }: { goals: Goal[] }) {
   );
 }
 
+/** 現在値の保存を、連続した変更が落ち着いてから1回だけ送るまでの待機時間(ms)。 */
+const SAVE_DEBOUNCE_MS = 400;
+/** 長押し開始から最初のリピートまでの間(単発タップと区別するための遅延)。 */
+const HOLD_INITIAL_DELAY_MS = 400;
+
+/** 長押しの経過時間に応じてリピート間隔を短くする(常に+1/-1ずつ)。 */
+function getHoldRepeatDelay(elapsedMs: number): number {
+  if (elapsedMs < 1500) return 220;
+  if (elapsedMs < 3500) return 90;
+  return 40;
+}
+
 function GoalCard({
   goal,
-  applyOptimisticValue,
   onEdit,
   onDelete,
 }: {
   goal: Goal;
-  applyOptimisticValue: (patch: { goalId: string; currentValue: number }) => void;
   onEdit: () => void;
   onDelete: () => void;
 }) {
-  const [isPending, startTransition] = useTransition();
+  // +/-操作・直接入力それぞれの体感速度を優先し、useOptimistic(1操作=1
+  // トランジション)ではなく、ローカルstateで即座に表示を更新したうえで
+  // 保存はデバウンスして1回にまとめる方式にする(連打・長押しで大量の
+  // Server Action呼び出しが競合し、順序が入れ替わって古い値で上書きされる
+  // 事態を避けるため)。
+  const [displayValue, setDisplayValue] = useState(goal.current_value);
+  const [isSaving, setIsSaving] = useState(false);
   const [isEditingValue, setIsEditingValue] = useState(false);
   const [draftValue, setDraftValue] = useState(String(goal.current_value));
   const [valueError, setValueError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const progress = calcGoalProgress(goal.current_value, goal.target_value);
+  const pendingSaveRef = useRef(false);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const holdTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const holdStartRef = useRef(0);
+  const holdDirectionRef = useRef<1 | -1>(1);
+  // setTimeoutのクロージャがdisplayValueの古い値を参照し続けないようにするためのref。
+  const displayValueRef = useRef(displayValue);
+  displayValueRef.current = displayValue;
+
+  // Finance連携等でサーバー側のcurrent_valueが変わったら追従する。ただし
+  // 保存待ちのローカル変更がある間は上書きしない(連打・長押しの途中で
+  // 表示が古い値へ戻ってしまうのを防ぐ)。
+  useEffect(() => {
+    if (!pendingSaveRef.current) {
+      setDisplayValue(goal.current_value);
+    }
+  }, [goal.current_value]);
+
+  useEffect(() => {
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      if (holdTimerRef.current) clearTimeout(holdTimerRef.current);
+    };
+  }, []);
+
+  const progress = calcGoalProgress(displayValue, goal.target_value);
   const unit = goal.unit ?? "";
-  const step = suggestGoalStep(goal.target_value);
   const isLinked = goal.goal_type !== "custom";
 
-  function commitValue(newValue: number) {
-    if (!Number.isFinite(newValue) || newValue < 0) {
-      setValueError("0以上の数値を入力してください。");
-      return;
-    }
-    setValueError(null);
-    startTransition(async () => {
-      applyOptimisticValue({ goalId: goal.id, currentValue: newValue });
-      const result = await adjustGoalCurrentValue(goal.id, newValue);
-      if (result.error) {
-        setValueError(result.error);
+  function scheduleSave(value: number) {
+    pendingSaveRef.current = true;
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => {
+      saveTimerRef.current = null;
+      setIsSaving(true);
+      adjustGoalCurrentValue(goal.id, value).then((result) => {
+        setIsSaving(false);
+        pendingSaveRef.current = false;
+        if (result.error) {
+          setValueError(result.error);
+          setDisplayValue(goal.current_value);
+        } else {
+          setValueError(null);
+        }
+      });
+    }, SAVE_DEBOUNCE_MS);
+  }
+
+  /** +1/-1のみを許可する。連打・長押しのどちらもこの関数を繰り返し呼ぶだけ。 */
+  function applyDelta(delta: 1 | -1) {
+    setDisplayValue((prev) => {
+      const next = Math.max(0, prev + delta);
+      if (next !== prev) {
+        setValueError(null);
+        scheduleSave(next);
       }
+      return next;
     });
   }
 
-  function handleStep(delta: number) {
-    commitValue(Math.max(0, goal.current_value + delta));
+  function clearHoldTimer() {
+    if (holdTimerRef.current) {
+      clearTimeout(holdTimerRef.current);
+      holdTimerRef.current = null;
+    }
+  }
+
+  function scheduleNextHoldTick() {
+    const elapsed = Date.now() - holdStartRef.current;
+    holdTimerRef.current = setTimeout(() => {
+      // -側で既に0まで達している場合は、これ以上リピートしても無意味なので止める。
+      if (holdDirectionRef.current === -1 && displayValueRef.current <= 0) {
+        clearHoldTimer();
+        return;
+      }
+      applyDelta(holdDirectionRef.current);
+      scheduleNextHoldTick();
+    }, getHoldRepeatDelay(elapsed));
+  }
+
+  // data-direction属性から方向を読み取る単一の安定したハンドラ。
+  // (render中にrefを参照するクロージャを都度生成しないようにするため)
+  function handlePointerDown(e: ReactPointerEvent<HTMLButtonElement>) {
+    e.preventDefault();
+    const direction = e.currentTarget.dataset.direction === "minus" ? -1 : 1;
+    if (direction === -1 && displayValueRef.current <= 0) {
+      return;
+    }
+    holdDirectionRef.current = direction;
+    applyDelta(direction);
+    holdStartRef.current = Date.now();
+    clearHoldTimer();
+    holdTimerRef.current = setTimeout(() => {
+      scheduleNextHoldTick();
+    }, HOLD_INITIAL_DELAY_MS);
+  }
+
+  function handlePointerEnd() {
+    clearHoldTimer();
   }
 
   function openValueEditor() {
-    setDraftValue(String(goal.current_value));
+    setDraftValue(String(displayValue));
     setValueError(null);
     setIsEditingValue(true);
   }
@@ -189,11 +272,13 @@ function GoalCard({
   function submitValueEditor() {
     const parsed = Number(draftValue);
     setIsEditingValue(false);
-    if (draftValue.trim() === "" || Number.isNaN(parsed)) {
-      setValueError("数値を入力してください。");
+    if (draftValue.trim() === "" || Number.isNaN(parsed) || parsed < 0) {
+      setValueError("0以上の数値を入力してください。");
       return;
     }
-    commitValue(parsed);
+    setDisplayValue(parsed);
+    setValueError(null);
+    scheduleSave(parsed);
   }
 
   return (
@@ -218,10 +303,15 @@ function GoalCard({
       <div className="flex items-center justify-center gap-2">
         <button
           type="button"
-          onClick={() => handleStep(-step)}
-          disabled={isPending || goal.current_value <= 0}
-          aria-label={`現在値を${step.toLocaleString("ja-JP")}減らす`}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border bg-surface-muted text-foreground transition-colors hover:bg-surface disabled:cursor-not-allowed disabled:opacity-40"
+          onPointerDown={handlePointerDown}
+          data-direction="minus"
+          onPointerUp={handlePointerEnd}
+          onPointerCancel={handlePointerEnd}
+          onPointerLeave={handlePointerEnd}
+          disabled={displayValue <= 0}
+          aria-label="現在値を1減らす"
+          style={{ touchAction: "none" }}
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border bg-surface-muted text-foreground transition-colors hover:bg-surface disabled:cursor-not-allowed disabled:opacity-40"
         >
           <Minus className="h-4 w-4" aria-hidden />
         </button>
@@ -252,20 +342,23 @@ function GoalCard({
           <button
             type="button"
             onClick={openValueEditor}
-            disabled={isPending}
-            className="min-w-0 rounded-lg px-2 py-1 text-center text-sm font-semibold text-foreground transition-colors hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60"
+            className="min-w-0 rounded-lg px-2 py-1 text-center text-sm font-semibold text-foreground transition-colors hover:bg-surface-muted"
           >
-            {goal.current_value.toLocaleString("ja-JP")}
+            {displayValue.toLocaleString("ja-JP")}
             {unit}
           </button>
         )}
 
         <button
           type="button"
-          onClick={() => handleStep(step)}
-          disabled={isPending}
-          aria-label={`現在値を${step.toLocaleString("ja-JP")}増やす`}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border bg-surface-muted text-foreground transition-colors hover:bg-surface disabled:cursor-not-allowed disabled:opacity-40"
+          onPointerDown={handlePointerDown}
+          data-direction="plus"
+          onPointerUp={handlePointerEnd}
+          onPointerCancel={handlePointerEnd}
+          onPointerLeave={handlePointerEnd}
+          aria-label="現在値を1増やす"
+          style={{ touchAction: "none" }}
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border bg-surface-muted text-foreground transition-colors hover:bg-surface"
         >
           <Plus className="h-4 w-4" aria-hidden />
         </button>
@@ -274,6 +367,7 @@ function GoalCard({
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
         <span>目標: {goal.target_value.toLocaleString("ja-JP")}{unit}</span>
         {goal.target_date ? <span>期限: {goal.target_date}</span> : null}
+        {isSaving ? <span className="text-[11px]">保存中…</span> : null}
       </div>
 
       {isLinked ? (
