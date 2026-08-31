@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Bar } from "@/components/ui/Bar";
 import { Card } from "@/components/ui/Card";
 import { Modal } from "@/components/ui/Modal";
-import { goalStatusLabel, goalStatusTone, goalTypeLabel } from "@/lib/goal-status";
+import { getDisplayGoalStatus, goalStatusLabel, goalStatusTone, goalTypeLabel } from "@/lib/goal-status";
 import { calcGoalProgress } from "@/lib/supabase/finance";
 import { adjustGoalCurrentValue } from "@/lib/supabase/goal-actions";
 import type { Goal } from "@/lib/supabase/types";
@@ -190,6 +190,9 @@ function GoalCard({
   const progress = calcGoalProgress(displayValue, goal.target_value);
   const unit = goal.unit ?? "";
   const isLinked = goal.goal_type !== "custom";
+  // +/-・長押し・直接入力で即座に変わるdisplayValueを使うため、保存の
+  // デバウンスを待たずに「達成」表示へ切り替わる。
+  const displayStatus = getDisplayGoalStatus(displayValue, goal.target_value, goal.status);
 
   function scheduleSave(value: number) {
     pendingSaveRef.current = true;
@@ -288,7 +291,7 @@ function GoalCard({
           <p className="truncate text-sm font-semibold text-foreground">{goal.title}</p>
           <p className="mt-0.5 text-xs text-muted-foreground">{goalTypeLabel[goal.goal_type]}</p>
         </div>
-        <Badge tone={goalStatusTone[goal.status]}>{goalStatusLabel[goal.status]}</Badge>
+        <Badge tone={goalStatusTone[displayStatus]}>{goalStatusLabel[displayStatus]}</Badge>
       </div>
 
       {goal.description ? (

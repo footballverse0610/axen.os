@@ -2,11 +2,10 @@
 
 import { useActionState, useEffect } from "react";
 import { createGoal, updateGoal, type GoalActionState } from "@/lib/supabase/goal-actions";
-import { goalStatusLabel, goalTypeLabel } from "@/lib/goal-status";
-import type { Goal, GoalStatus, GoalType } from "@/lib/supabase/types";
+import { MANUAL_GOAL_STATUS_OPTIONS, goalStatusLabel, goalTypeLabel } from "@/lib/goal-status";
+import type { Goal, GoalType } from "@/lib/supabase/types";
 
 const GOAL_TYPE_OPTIONS: GoalType[] = ["revenue", "profit", "sales_count", "custom"];
-const GOAL_STATUS_OPTIONS: GoalStatus[] = ["active", "achieved", "missed", "paused"];
 
 const initialState: GoalActionState = { error: null };
 
@@ -20,6 +19,9 @@ function today() {
 export function GoalForm({ goal, onDone }: { goal?: Goal; onDone: () => void }) {
   const action = goal ? updateGoal : createGoal;
   const [state, formAction, isPending] = useActionState(action, initialState);
+  // 現在値が目標値以上の場合は自動的に「達成」表示になり、ステータスを
+  // 手動選択できない(達成条件を下回れば、保存されている値へ自動的に戻る)。
+  const isAchieved = goal ? goal.current_value >= goal.target_value : false;
 
   useEffect(() => {
     if (state.success) {
@@ -84,18 +86,33 @@ export function GoalForm({ goal, onDone }: { goal?: Goal; onDone: () => void }) 
           <label htmlFor="status" className="text-xs font-medium text-muted-foreground">
             ステータス
           </label>
-          <select
-            id="status"
-            name="status"
-            defaultValue={goal?.status ?? "active"}
-            className={fieldClass}
-          >
-            {GOAL_STATUS_OPTIONS.map((s) => (
-              <option key={s} value={s}>
-                {goalStatusLabel[s]}
-              </option>
-            ))}
-          </select>
+          {isAchieved ? (
+            <>
+              {/* 達成条件を満たしている間は手動変更できない。保存されている
+                  ステータスはそのまま維持し(達成条件を下回れば自動的に
+                  その表示へ戻る)、hidden inputでそのまま送信する。 */}
+              <input type="hidden" name="status" value={goal?.status} />
+              <p
+                className={`${fieldClass} flex items-center text-muted-foreground`}
+                aria-live="polite"
+              >
+                達成(自動判定)
+              </p>
+            </>
+          ) : (
+            <select
+              id="status"
+              name="status"
+              defaultValue={goal?.status ?? "active"}
+              className={fieldClass}
+            >
+              {MANUAL_GOAL_STATUS_OPTIONS.map((s) => (
+                <option key={s} value={s}>
+                  {goalStatusLabel[s]}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
       </div>
 
