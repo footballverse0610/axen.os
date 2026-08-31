@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { ChangePasswordForm } from "@/components/settings/ChangePasswordForm";
+import { ProfileForm } from "@/components/settings/ProfileForm";
 import { getCurrentUser } from "@/lib/supabase/get-current-user";
 import { getCurrentProfile } from "@/lib/supabase/profile";
 import { logout } from "@/lib/supabase/actions";
@@ -37,11 +38,8 @@ export default async function SettingsPage() {
 
       <section>
         <SectionHeader title="プロフィール" />
-        <Card className="flex flex-col gap-1.5">
-          <span className="text-xs text-muted-foreground">表示名</span>
-          <span className="text-sm font-medium text-foreground">
-            {profile?.display_name || "未設定"}
-          </span>
+        <Card>
+          <ProfileForm profile={profile} />
         </Card>
       </section>
 

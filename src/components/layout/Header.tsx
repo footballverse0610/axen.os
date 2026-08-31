@@ -10,14 +10,23 @@ import type { Business } from "@/lib/supabase/types";
 
 export function Header({
   userEmail,
+  displayName,
+  avatarIcon,
   currentBusiness,
 }: {
   userEmail: string | null;
+  displayName?: string | null;
+  avatarIcon?: string | null;
   currentBusiness: Business;
 }) {
   const pathname = usePathname();
   const current = navItems.find((item) => item.href === pathname);
-  const initial = userEmail ? userEmail.charAt(0).toUpperCase() : "?";
+  const initial = displayName
+    ? displayName.charAt(0).toUpperCase()
+    : userEmail
+      ? userEmail.charAt(0).toUpperCase()
+      : "?";
+  const avatarLabel = displayName || userEmail || "設定";
 
   return (
     <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-border bg-background/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80 md:px-8 md:py-4">
@@ -31,10 +40,10 @@ export function Header({
         <Link
           href="/settings"
           aria-label="設定"
-          title={userEmail ?? "設定"}
+          title={avatarLabel}
           className="flex h-8 w-8 items-center justify-center rounded-full bg-surface-muted text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
         >
-          {initial}
+          {avatarIcon || initial}
         </Link>
         <form action={logout}>
           <button

@@ -1,8 +1,9 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useState, type FormEvent } from "react";
 import { createGoal, updateGoal, type GoalActionState } from "@/lib/supabase/goal-actions";
 import { MANUAL_GOAL_STATUS_OPTIONS, goalStatusLabel, goalTypeLabel } from "@/lib/goal-status";
+import { formatJapaneseNumber, parseJapaneseNumber } from "@/lib/japanese-number";
 import type { Goal, GoalType } from "@/lib/supabase/types";
 
 const GOAL_TYPE_OPTIONS: GoalType[] = ["revenue", "profit", "sales_count", "custom"];
@@ -23,14 +24,43 @@ export function GoalForm({ goal, onDone }: { goal?: Goal; onDone: () => void }) 
   // 手動選択できない(達成条件を下回れば、保存されている値へ自動的に戻る)。
   const isAchieved = goal ? goal.current_value >= goal.target_value : false;
 
+  // 目標値・現在値は「10000」のようなプレーンな数値に加え、「1万」「1.5億」の
+  // ような日本語表記でも入力できるようにする。入力欄自体はtype="text"にし、
+  // 変換後のプレーンな数値をhidden inputでtargetValue/currentValueとして
+  // 送信する(goal-actions.ts側の受け取り方は一切変更しない)。
+  const [targetText, setTargetText] = useState(goal ? String(goal.target_value) : "");
+  const [currentText, setCurrentText] = useState(goal ? String(goal.current_value) : "0");
+  const [valueFormError, setValueFormError] = useState<string | null>(null);
+
+  const targetParsed = parseJapaneseNumber(targetText);
+  const currentParsed = currentText.trim() === "" ? 0 : parseJapaneseNumber(currentText);
+
   useEffect(() => {
     if (state.success) {
       onDone();
     }
   }, [state.success, onDone]);
 
+  function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    if (targetText.trim() === "" || targetParsed === null || targetParsed <= 0) {
+      e.preventDefault();
+      setValueFormError(
+        "目標値は「10000」や「1万」のように、0より大きい数値の形式で入力してください。",
+      );
+      return;
+    }
+    if (currentParsed === null || currentParsed < 0) {
+      e.preventDefault();
+      setValueFormError(
+        "現在値は「5000」や「1.5万」のように、0以上の数値の形式で入力してください。",
+      );
+      return;
+    }
+    setValueFormError(null);
+  }
+
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <form action={formAction} onSubmit={handleSubmit} className="flex flex-col gap-4">
       {goal ? <input type="hidden" name="goalId" value={goal.id} /> : null}
 
       <div className="flex flex-col gap-1.5">
@@ -123,14 +153,28 @@ export function GoalForm({ goal, onDone }: { goal?: Goal; onDone: () => void }) 
           </label>
           <input
             id="targetValue"
-            name="targetValue"
-            type="number"
-            min={1}
-            step="any"
+            type="text"
+            inputMode="decimal"
             required
-            defaultValue={goal?.target_value}
+            value={targetText}
+            onChange={(e) => {
+              setTargetText(e.target.value);
+              setValueFormError(null);
+            }}
+            placeholder="例：10000 や 1万"
             className={fieldClass}
           />
+          <input type="hidden" name="targetValue" value={targetParsed !== null ? String(targetParsed) : ""} />
+          {targetText.trim() !== "" && targetParsed !== null ? (
+            <p className="text-[11px] text-muted-foreground">
+              {targetParsed.toLocaleString("ja-JP")}({formatJapaneseNumber(targetParsed)})として入力されます
+            </p>
+          ) : null}
+          {targetText.trim() !== "" && targetParsed === null ? (
+            <p role="alert" className="text-[11px] text-red-400">
+              数値、または「1万」「1.5億」のような形式で入力してください。
+            </p>
+          ) : null}
         </div>
 
         <div className="flex flex-col gap-1.5">
@@ -139,13 +183,27 @@ export function GoalForm({ goal, onDone }: { goal?: Goal; onDone: () => void }) 
           </label>
           <input
             id="currentValue"
-            name="currentValue"
-            type="number"
-            min={0}
-            step="any"
-            defaultValue={goal?.current_value ?? 0}
+            type="text"
+            inputMode="decimal"
+            value={currentText}
+            onChange={(e) => {
+              setCurrentText(e.target.value);
+              setValueFormError(null);
+            }}
+            placeholder="例：5000 や 1.5万"
             className={fieldClass}
           />
+          <input type="hidden" name="currentValue" value={currentParsed !== null ? String(currentParsed) : ""} />
+          {currentText.trim() !== "" && currentParsed !== null ? (
+            <p className="text-[11px] text-muted-foreground">
+              {currentParsed.toLocaleString("ja-JP")}({formatJapaneseNumber(currentParsed)})として入力されます
+            </p>
+          ) : null}
+          {currentText.trim() !== "" && currentParsed === null ? (
+            <p role="alert" className="text-[11px] text-red-400">
+              数値、または「1万」「1.5億」のような形式で入力してください。
+            </p>
+          ) : null}
         </div>
       </div>
 
@@ -192,6 +250,12 @@ export function GoalForm({ goal, onDone }: { goal?: Goal; onDone: () => void }) 
           />
         </div>
       </div>
+
+      {valueFormError ? (
+        <p role="alert" className="text-sm text-red-400">
+          {valueFormError}
+        </p>
+      ) : null}
 
       {state.error ? (
         <p role="alert" className="text-sm text-red-400">
