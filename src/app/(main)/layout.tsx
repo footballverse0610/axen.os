@@ -22,14 +22,6 @@ export default async function MainLayout({ children }: LayoutProps<"/">) {
   }
 
   const businesses = await getUserBusinesses();
-
-  // TEMP DEBUG(調査用、原因特定後に削除する)
-  console.log("[DEBUG layout]", {
-    userId: user.id,
-    businessesLength: businesses.length,
-    businessIds: businesses.map((b) => b.id),
-  });
-
   if (businesses.length === 0) {
     redirect("/onboarding");
   }
