@@ -20,8 +20,8 @@ function toggleValue(list: string[], value: string): string[] {
   return list.includes(value) ? list.filter((v) => v !== value) : [...list, value];
 }
 
-/** 選択肢を大きなカード型ボタンとして表示する共通パーツ */
-function OptionCard({
+/** 選択肢を大きなカード型ボタンとして表示する共通パーツ(start-guideの診断でも再利用) */
+export function OptionCard({
   label,
   selected,
   onClick,

@@ -5,6 +5,13 @@ import { Send, Sparkles } from "lucide-react";
 import { suggestedPrompts } from "@/lib/mock-data";
 import type { CoachMessage } from "@/lib/supabase/types";
 
+/** stateを持つ側でのみ使う型。propsを増やしすぎないよう最小限にする。 */
+interface CoachChatProps {
+  initialMessages: CoachMessage[];
+  /** start-guide等から遷移した際に、入力欄へあらかじめ入れておく文章(自動送信はしない)。 */
+  initialInput?: string;
+}
+
 interface ChatMessage {
   id: string;
   role: "user" | "coach";
@@ -15,11 +22,11 @@ function toChatMessage(message: CoachMessage): ChatMessage {
   return { id: message.id, role: message.role, content: message.content };
 }
 
-export function CoachChat({ initialMessages }: { initialMessages: CoachMessage[] }) {
+export function CoachChat({ initialMessages, initialInput }: CoachChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>(
     initialMessages.map(toChatMessage),
   );
-  const [input, setInput] = useState("");
+  const [input, setInput] = useState(initialInput ?? "");
   const [isSending, setIsSending] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const scrollAnchorRef = useRef<HTMLDivElement>(null);

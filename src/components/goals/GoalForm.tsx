@@ -17,7 +17,23 @@ function today() {
   return new Date().toISOString().slice(0, 10);
 }
 
-export function GoalForm({ goal, onDone }: { goal?: Goal; onDone: () => void }) {
+export interface GoalFormInitialValues {
+  title?: string;
+  goalType?: GoalType;
+  unit?: string;
+  targetValue?: number;
+}
+
+export function GoalForm({
+  goal,
+  onDone,
+  initialValues,
+}: {
+  goal?: Goal;
+  onDone: () => void;
+  /** 作成モード(goal未指定)でのみ使う初期値。startガイド等からの遷移で使う。 */
+  initialValues?: GoalFormInitialValues;
+}) {
   const action = goal ? updateGoal : createGoal;
   const [state, formAction, isPending] = useActionState(action, initialState);
   // 現在値が目標値以上の場合は自動的に「達成」表示になり、ステータスを
@@ -28,7 +44,13 @@ export function GoalForm({ goal, onDone }: { goal?: Goal; onDone: () => void }) 
   // ような日本語表記でも入力できるようにする。入力欄自体はtype="text"にし、
   // 変換後のプレーンな数値をhidden inputでtargetValue/currentValueとして
   // 送信する(goal-actions.ts側の受け取り方は一切変更しない)。
-  const [targetText, setTargetText] = useState(goal ? String(goal.target_value) : "");
+  const [targetText, setTargetText] = useState(
+    goal
+      ? String(goal.target_value)
+      : initialValues?.targetValue !== undefined
+        ? String(initialValues.targetValue)
+        : "",
+  );
   const [currentText, setCurrentText] = useState(goal ? String(goal.current_value) : "0");
   const [valueFormError, setValueFormError] = useState<string | null>(null);
 
@@ -73,7 +95,7 @@ export function GoalForm({ goal, onDone }: { goal?: Goal; onDone: () => void }) 
           type="text"
           required
           maxLength={100}
-          defaultValue={goal?.title}
+          defaultValue={goal?.title ?? initialValues?.title}
           className={fieldClass}
           placeholder="例：月商10万円を達成する"
         />
@@ -101,7 +123,7 @@ export function GoalForm({ goal, onDone }: { goal?: Goal; onDone: () => void }) 
           <select
             id="goalType"
             name="goalType"
-            defaultValue={goal?.goal_type ?? "revenue"}
+            defaultValue={goal?.goal_type ?? initialValues?.goalType ?? "revenue"}
             className={fieldClass}
           >
             {GOAL_TYPE_OPTIONS.map((type) => (
@@ -216,7 +238,7 @@ export function GoalForm({ goal, onDone }: { goal?: Goal; onDone: () => void }) 
           name="unit"
           type="text"
           maxLength={20}
-          defaultValue={goal?.unit ?? ""}
+          defaultValue={goal?.unit ?? initialValues?.unit ?? ""}
           className={fieldClass}
           placeholder="例：円、件"
         />
