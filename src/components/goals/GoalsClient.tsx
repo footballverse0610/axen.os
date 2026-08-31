@@ -368,10 +368,18 @@ function GoalCard({
           <button
             type="button"
             onClick={openValueEditor}
-            className="min-w-0 rounded-lg px-2 py-1 text-center text-sm font-semibold text-foreground transition-colors hover:bg-surface-muted"
+            aria-label={`現在値 ${displayValue.toLocaleString("ja-JP")}${unit}、タップして入力`}
+            className="group flex min-w-0 flex-col items-center gap-0.5 rounded-lg px-2 py-1 text-center transition-colors hover:bg-surface-muted"
           >
-            {displayValue.toLocaleString("ja-JP")}
-            {unit}
+            <span className="flex items-center gap-1 text-sm font-semibold text-foreground">
+              {displayValue.toLocaleString("ja-JP")}
+              {unit}
+              <Pencil
+                className="h-3 w-3 shrink-0 text-muted-foreground/70 transition-colors group-hover:text-foreground"
+                aria-hidden
+              />
+            </span>
+            <span className="text-[10px] leading-none text-muted-foreground">タップして入力</span>
           </button>
         )}
 

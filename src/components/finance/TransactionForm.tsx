@@ -1,5 +1,6 @@
 "use client";
 
+import { Calculator } from "lucide-react";
 import { useActionState, useEffect, useState } from "react";
 import {
   createTransaction,
@@ -9,12 +10,16 @@ import {
 } from "@/lib/supabase/finance-actions";
 import { CategoryPicker } from "@/components/ui/CategoryPicker";
 import { EXPENSE_CATEGORY_SUGGESTIONS, SALE_CATEGORY_SUGGESTIONS } from "@/lib/finance-categories";
+import { SimpleCalculator } from "./SimpleCalculator";
 import type { FinanceEntry } from "./FinanceClient";
 
 const initialState: FinanceActionState = { error: null };
 
 const fieldClass =
   "rounded-xl border border-border bg-surface-muted px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground/20";
+
+/** 金額欄の入力補助。「単価×数量」と「電卓」は同時に開かず、片方だけ表示する。 */
+type AmountAid = "none" | "unitPrice" | "calculator";
 
 function today() {
   return new Date().toISOString().slice(0, 10);
@@ -42,14 +47,70 @@ export function TransactionForm({
 
   const label = entry?.data.label;
   const category = entry?.data.category;
-  const amount = entry?.data.amount;
+  const amountDefault = entry?.data.amount;
   const date = entry ? (entry.kind === "sale" ? entry.data.sold_on : entry.data.spent_on) : today();
   const partyName = entry
     ? entry.kind === "sale"
       ? (entry.data.customer_name ?? "")
       : (entry.data.vendor ?? "")
     : "";
-  const quantity = entry?.kind === "sale" ? entry.data.quantity : 1;
+  const initialQuantity = entry?.kind === "sale" ? entry.data.quantity : 1;
+
+  // amountは、直接入力・単価×数量パネル・電卓のいずれからも書き込める
+  // 単一の状態にする(3つの入力手段が競合しないよう、常に同じ値を経由させる)。
+  const [amount, setAmount] = useState(amountDefault != null ? String(amountDefault) : "");
+  const [quantity, setQuantity] = useState(String(initialQuantity ?? 1));
+  const [unitPrice, setUnitPrice] = useState("");
+  const [aid, setAid] = useState<AmountAid>("none");
+
+  const unitPriceNum = Number(unitPrice);
+  const quantityNum = Number(quantity);
+  const unitPriceTotal =
+    unitPrice.trim() !== "" &&
+    quantity.trim() !== "" &&
+    Number.isFinite(unitPriceNum) &&
+    Number.isFinite(quantityNum) &&
+    unitPriceNum >= 0 &&
+    quantityNum > 0
+      ? Math.round(unitPriceNum * quantityNum)
+      : null;
+
+  // 単価・数量の入力ハンドラ内で直接金額へ反映する(useEffect経由の
+  // setStateは連鎖的な再レンダリングを招くため避け、入力イベントの中で完結させる)。
+  function syncAmountFromUnitPrice(nextUnitPrice: string, nextQuantity: string) {
+    const priceNum = Number(nextUnitPrice);
+    const qtyNum = Number(nextQuantity);
+    if (
+      nextUnitPrice.trim() !== "" &&
+      nextQuantity.trim() !== "" &&
+      Number.isFinite(priceNum) &&
+      Number.isFinite(qtyNum) &&
+      priceNum >= 0 &&
+      qtyNum > 0
+    ) {
+      setAmount(String(Math.round(priceNum * qtyNum)));
+    }
+  }
+
+  function handleUnitPriceChange(value: string) {
+    setUnitPrice(value);
+    syncAmountFromUnitPrice(value, quantity);
+  }
+
+  function handleUnitPriceQuantityChange(value: string) {
+    setQuantity(value);
+    syncAmountFromUnitPrice(unitPrice, value);
+  }
+
+  function toggleAid(next: AmountAid) {
+    setAid((prev) => (prev === next ? "none" : next));
+  }
+
+  function handleCalculatorApply(value: number) {
+    if (!Number.isFinite(value) || value < 0) return;
+    setAmount(String(Math.round(value)));
+    setAid("none");
+  }
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
@@ -133,36 +194,78 @@ export function TransactionForm({
 
       <div className="grid grid-cols-2 gap-3">
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="amount" className="text-xs font-medium text-muted-foreground">
-            金額（円） <span className="text-red-400">*</span>
-          </label>
+          <div className="flex items-center justify-between gap-2">
+            <label htmlFor="amount" className="text-xs font-medium text-muted-foreground">
+              金額（円） <span className="text-red-400">*</span>
+            </label>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => toggleAid("unitPrice")}
+                aria-pressed={aid === "unitPrice"}
+                className={`rounded-full border px-2 py-1 text-[11px] font-medium transition-colors ${
+                  aid === "unitPrice"
+                    ? "border-foreground bg-foreground text-background"
+                    : "border-border bg-surface-muted text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                単価×数量
+              </button>
+              <button
+                type="button"
+                onClick={() => toggleAid("calculator")}
+                aria-pressed={aid === "calculator"}
+                aria-label="電卓を開く"
+                className={`flex h-6 w-6 items-center justify-center rounded-full border transition-colors ${
+                  aid === "calculator"
+                    ? "border-foreground bg-foreground text-background"
+                    : "border-border bg-surface-muted text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Calculator className="h-3.5 w-3.5" aria-hidden />
+              </button>
+            </div>
+          </div>
           <input
             id="amount"
             name="amount"
             type="number"
+            inputMode="numeric"
             min={1}
             step={1}
             required
-            defaultValue={amount}
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
             className={fieldClass}
           />
         </div>
 
         {isSale ? (
-          <div className="flex flex-col gap-1.5">
-            <label htmlFor="quantity" className="text-xs font-medium text-muted-foreground">
-              数量
-            </label>
-            <input
-              id="quantity"
-              name="quantity"
-              type="number"
-              min={1}
-              step={1}
-              defaultValue={quantity}
-              className={fieldClass}
-            />
-          </div>
+          aid === "unitPrice" ? (
+            <div className="flex flex-col gap-1.5">
+              <span className="text-xs font-medium text-muted-foreground">数量</span>
+              <p className={`${fieldClass} flex items-center text-muted-foreground`}>
+                下欄で入力してください
+              </p>
+              <input type="hidden" name="quantity" value={quantity} />
+            </div>
+          ) : (
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="quantity" className="text-xs font-medium text-muted-foreground">
+                数量
+              </label>
+              <input
+                id="quantity"
+                name="quantity"
+                type="number"
+                min={1}
+                step={1}
+                value={quantity}
+                onChange={(e) => setQuantity(e.target.value)}
+                className={fieldClass}
+              />
+            </div>
+          )
         ) : (
           <div className="flex flex-col gap-1.5">
             <label htmlFor="date" className="text-xs font-medium text-muted-foreground">
@@ -179,6 +282,52 @@ export function TransactionForm({
           </div>
         )}
       </div>
+
+      {aid === "unitPrice" ? (
+        <div className="flex flex-col gap-3 rounded-xl border border-border bg-surface-muted/60 p-3">
+          <p className="text-xs font-medium text-muted-foreground">単価 × 数量で入力</p>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="unitPrice" className="text-xs text-muted-foreground">
+                単価（円）
+              </label>
+              <input
+                id="unitPrice"
+                type="number"
+                inputMode="numeric"
+                min={0}
+                step={1}
+                value={unitPrice}
+                onChange={(e) => handleUnitPriceChange(e.target.value)}
+                className={fieldClass}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="unitPriceQuantity" className="text-xs text-muted-foreground">
+                数量
+              </label>
+              <input
+                id="unitPriceQuantity"
+                type="number"
+                inputMode="numeric"
+                min={1}
+                step={1}
+                value={quantity}
+                onChange={(e) => handleUnitPriceQuantityChange(e.target.value)}
+                className={fieldClass}
+              />
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            合計金額: {unitPriceTotal !== null ? `${unitPriceTotal.toLocaleString("ja-JP")}円` : "―"}
+            （金額欄に自動反映されます）
+          </p>
+        </div>
+      ) : null}
+
+      {aid === "calculator" ? (
+        <SimpleCalculator onApply={handleCalculatorApply} onClose={() => setAid("none")} />
+      ) : null}
 
       {isSale ? (
         <div className="flex flex-col gap-1.5">

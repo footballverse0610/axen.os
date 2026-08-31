@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useState, type FormEvent } from "react";
 import {
   createBusiness,
   updateBusiness,
@@ -16,6 +16,21 @@ const STAGE_OPTIONS = [
   { value: "operating", label: "運営中" },
   { value: "paused", label: "一時停止" },
 ];
+
+/** 業種のプリセット候補。既存の industry(text) 列はそのまま自由記述文字列を保存する。 */
+const INDUSTRY_OPTIONS = [
+  "飲食",
+  "IT・Web",
+  "小売・EC",
+  "美容・健康",
+  "教育",
+  "コンサルティング",
+  "デザイン・クリエイティブ",
+  "製造",
+  "建設・不動産",
+  "医療・福祉",
+];
+const OTHER_INDUSTRY_VALUE = "__other__";
 
 const fieldClass =
   "rounded-xl border border-border bg-surface-muted px-4 py-3 text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground/20";
@@ -42,14 +57,37 @@ export function OnboardingForm({
   const action = business ? updateBusiness : createBusiness;
   const [state, formAction, isPending] = useActionState(action, initialState);
 
+  const initialIndustry = business?.industry ?? "";
+  const initialIsPreset = INDUSTRY_OPTIONS.includes(initialIndustry);
+  // 既存データが自由記述で保存されていて、かつプリセットに一致しない場合は
+  // 「その他」を選択した状態として復元し、自由入力欄に元の値を表示する。
+  const [industrySelect, setIndustrySelect] = useState(
+    !initialIndustry ? "" : initialIsPreset ? initialIndustry : OTHER_INDUSTRY_VALUE,
+  );
+  const [industryOther, setIndustryOther] = useState(
+    !initialIndustry || initialIsPreset ? "" : initialIndustry,
+  );
+  const [industryError, setIndustryError] = useState<string | null>(null);
+  const isOtherIndustry = industrySelect === OTHER_INDUSTRY_VALUE;
+  const industryValue = isOtherIndustry ? industryOther.trim() : industrySelect;
+
   useEffect(() => {
     if (business && state.success) {
       onDone?.();
     }
   }, [business, state.success, onDone]);
 
+  function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    if (isOtherIndustry && industryOther.trim() === "") {
+      e.preventDefault();
+      setIndustryError("業種を入力してください。");
+      return;
+    }
+    setIndustryError(null);
+  }
+
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <form action={formAction} onSubmit={handleSubmit} className="flex flex-col gap-4">
       <div className="flex flex-col gap-1.5">
         <label htmlFor="name" className="text-xs font-medium text-muted-foreground">
           事業名 <span className="text-red-400">*</span>
@@ -85,15 +123,44 @@ export function OnboardingForm({
         <label htmlFor="industry" className="text-xs font-medium text-muted-foreground">
           業種
         </label>
-        <input
+        <select
           id="industry"
-          name="industry"
-          type="text"
-          maxLength={50}
-          defaultValue={business?.industry ?? ""}
+          value={industrySelect}
+          onChange={(e) => {
+            setIndustrySelect(e.target.value);
+            setIndustryError(null);
+          }}
           className={fieldClass}
-          placeholder="例：飲食、IT、教育"
-        />
+        >
+          <option value="">選択してください</option>
+          {INDUSTRY_OPTIONS.map((opt) => (
+            <option key={opt} value={opt}>
+              {opt}
+            </option>
+          ))}
+          <option value={OTHER_INDUSTRY_VALUE}>その他（自由入力）</option>
+        </select>
+        {isOtherIndustry ? (
+          <input
+            id="industryOther"
+            type="text"
+            maxLength={50}
+            value={industryOther}
+            onChange={(e) => {
+              setIndustryOther(e.target.value);
+              setIndustryError(null);
+            }}
+            className={fieldClass}
+            placeholder="業種を入力してください"
+            aria-label="業種（自由入力）"
+          />
+        ) : null}
+        {industryError ? (
+          <p role="alert" className="text-xs text-red-400">
+            {industryError}
+          </p>
+        ) : null}
+        <input type="hidden" name="industry" value={industryValue} />
       </div>
 
       <div className="flex flex-col gap-1.5">
