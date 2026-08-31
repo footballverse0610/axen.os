@@ -1,7 +1,13 @@
 "use client";
 
 import { Minus, Plus, Pencil, Target, Trash2 } from "lucide-react";
-import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  useTransition,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 import { Badge } from "@/components/ui/Badge";
 import { Bar } from "@/components/ui/Bar";
 import { Card } from "@/components/ui/Card";
@@ -22,8 +28,16 @@ type ModalState =
 export function GoalsClient({ goals }: { goals: Goal[] }) {
   const [modal, setModal] = useState<ModalState>(null);
 
-  const activeGoals = goals.filter((g) => g.status === "active");
-  const otherGoals = goals.filter((g) => g.status !== "active");
+  // 保存されているstatusではなく、自動達成判定込みの表示ステータスで
+  // 振り分ける。これにより、current_valueがtarget_value以上になり
+  // 「達成」表示になった目標は、保存中のstatusが「進行中」のままでも
+  // 自動的に「終了した目標」側へ移動する。
+  const activeGoals = goals.filter(
+    (g) => getDisplayGoalStatus(g.current_value, g.target_value, g.status) === "active",
+  );
+  const otherGoals = goals.filter(
+    (g) => getDisplayGoalStatus(g.current_value, g.target_value, g.status) !== "active",
+  );
 
   if (goals.length === 0) {
     return (
@@ -157,6 +171,14 @@ function GoalCard({
   // 事態を避けるため)。
   const [displayValue, setDisplayValue] = useState(goal.current_value);
   const [isSaving, setIsSaving] = useState(false);
+  // 保存(Server Action呼び出し)をReactのtransitionでラップするためだけに
+  // 使う(useOptimisticは使わない)。Next.jsは、Server Action内で
+  // revalidatePath()が呼ばれた際、それがtransition内から呼ばれた場合に
+  // 現在のページのデータを自動的に再取得する。transition外(単純な
+  // .then())で呼ぶと、サーバー側のキャッシュは無効化されてもこの画面が
+  // 自動的に再取得しないため、「達成」による終了目標セクションへの移動が
+  // 反映されなかった。
+  const [, startSaveTransition] = useTransition();
   const [isEditingValue, setIsEditingValue] = useState(false);
   const [draftValue, setDraftValue] = useState(String(goal.current_value));
   const [valueError, setValueError] = useState<string | null>(null);
@@ -200,7 +222,8 @@ function GoalCard({
     saveTimerRef.current = setTimeout(() => {
       saveTimerRef.current = null;
       setIsSaving(true);
-      adjustGoalCurrentValue(goal.id, value).then((result) => {
+      startSaveTransition(async () => {
+        const result = await adjustGoalCurrentValue(goal.id, value);
         setIsSaving(false);
         pendingSaveRef.current = false;
         if (result.error) {
