@@ -21,6 +21,13 @@ export function Header({
   const current = navItems.find((item) => item.href === pathname);
   const initial = userEmail ? userEmail.charAt(0).toUpperCase() : "?";
 
+  // TEMP DEBUG(調査用、原因特定後に削除する)。Client Componentのため
+  // ブラウザ側のコンソールに出力される(サーバーのFunction Logsではない)。
+  console.log("[DEBUG Header]", {
+    businessesLength: businesses.length,
+    businessNames: businesses.map((b) => b.name),
+  });
+
   return (
     <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-border bg-background/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80 md:px-8 md:py-4">
       <div className="flex min-w-0 flex-col gap-1">

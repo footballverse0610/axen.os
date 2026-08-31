@@ -21,6 +21,13 @@ export function BusinessSwitcher({
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
+  // TEMP DEBUG(調査用、原因特定後に削除する)。ブラウザ側のコンソールに出力される。
+  console.log("[DEBUG BusinessSwitcher]", {
+    businessesLength: businesses.length,
+    businessNames: businesses.map((b) => b.name),
+    currentBusinessId: currentBusiness.id,
+  });
+
   function handleSelect(businessId: string) {
     if (businessId === currentBusiness.id) {
       setView("closed");
@@ -54,8 +61,19 @@ export function BusinessSwitcher({
         </button>
       </div>
 
+      {/* TEMP DEBUG(調査用、原因特定後に削除する)。モーダルを開かなくても常に見える位置に表示する。 */}
+      <p className="mt-1 rounded bg-amber-500/10 px-1.5 py-0.5 text-[10px] text-amber-500">
+        [DEBUG] businesses.length={businesses.length} names=
+        {businesses.map((b) => b.name).join(",") || "(空)"}
+      </p>
+
       {view === "list" ? (
         <Modal title="事業を切り替える" onClose={() => setView("closed")}>
+          {/* TEMP DEBUG(調査用、原因特定後に削除する)。モーダル内でも同じ値を確認する。 */}
+          <p className="mb-2 rounded-lg bg-amber-500/10 px-2 py-1 text-[11px] text-amber-500">
+            [DEBUG modal] businesses.length = {businesses.length} / names:{" "}
+            {businesses.map((b) => b.name).join(", ") || "(空)"}
+          </p>
           <div className="flex flex-col gap-1">
             {businesses.map((business) => {
               const isCurrent = business.id === currentBusiness.id;
