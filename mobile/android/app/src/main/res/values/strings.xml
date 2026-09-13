@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">起業しよ。</string>
+    <string name="title_activity_main">起業しよ。</string>
+    <string name="package_name">com.kigyoshiyo.app</string>
+    <string name="custom_url_scheme">com.kigyoshiyo.app</string>
+</resources>
