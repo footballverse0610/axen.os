@@ -1,0 +1,6 @@
+# npm dependencies (Capacitor CLI等)
+node_modules/
+npm-debug.log*
+
+# Capacitor generates this from capacitor.config.ts on sync/build
+android/app/src/main/assets/capacitor.config.json

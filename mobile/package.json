@@ -1,0 +1,22 @@
+{
+  "name": "kigyoshiyo-mobile",
+  "version": "0.1.0",
+  "private": true,
+  "description": "起業しよ。をAndroid/iOSアプリとして配布するためのCapacitorラッパー。既存のNext.jsアプリ(リポジトリルート)とは完全に独立しており、本番のNext.js/Vercelビルドには一切影響しない。",
+  "scripts": {
+    "cap": "cap",
+    "sync": "cap sync",
+    "android": "cap open android",
+    "android:build-debug": "cd android && ./gradlew assembleDebug",
+    "android:build-release-aab": "cd android && ./gradlew bundleRelease"
+  },
+  "dependencies": {
+    "@capacitor/android": "8.5.1",
+    "@capacitor/app": "8.1.1",
+    "@capacitor/core": "8.5.1",
+    "@capacitor/splash-screen": "8.0.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.5.1"
+  }
+}
