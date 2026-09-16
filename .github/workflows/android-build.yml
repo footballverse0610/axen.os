@@ -5,8 +5,12 @@ name: Android Debug Build
 # 組織ポリシーで遮断されており、Android Gradle Plugin自体を取得できず
 # ビルドできなかったため、GitHub-hosted runner(Ubuntu)上で実行する。
 #
-# 対象は mobile/ 配下のCapacitorラッパーのみ。リポジトリルートのNext.jsアプリ
-# (src/等)は関与しない。
+# ビルド対象自体は mobile/ 配下のCapacitorラッパーのみだが、Capacitorは
+# WebView内で動くルートNext.jsアプリのJS(依存関係・src/app・
+# src/components/capacitor/以下のネイティブ連携コード)をそのまま
+# バンドルして実行するため、それらの変更もAndroidの動作に影響しうる。
+# そのためpushトリガーのpathsには、Android動作に影響しうる最小限の
+# ルート側パスも含めている(Web版全体の変更まで無条件に含めるものではない)。
 #
 # 今回はDebug APKのビルド成功確認のみが目的のため、Release署名・keystoreの
 # 設定は行っていない(bundleRelease/assembleReleaseはこのworkflowには含まない)。
@@ -17,6 +21,10 @@ name: Android Debug Build
     paths:
       - "mobile/**"
       - ".github/workflows/android-build.yml"
+      - "package.json"
+      - "package-lock.json"
+      - "src/app/**"
+      - "src/components/capacitor/**"
 
 permissions:
   contents: read
