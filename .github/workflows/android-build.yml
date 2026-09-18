@@ -89,3 +89,15 @@ jobs:
           name: kigyoshiyo-debug-apk
           path: mobile/android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+
+      - name: Run Android lint (Debug)
+        working-directory: mobile/android
+        run: ./gradlew lintDebug --no-daemon
+
+      - name: Upload Android lint report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: kigyoshiyo-lint-report
+          path: mobile/android/app/build/reports/lint-results-debug.html
+          if-no-files-found: warn
