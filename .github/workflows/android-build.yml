@@ -42,6 +42,17 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
+        with:
+          # android-actions/setup-android@v4のpackages入力のデフォルトは
+          # 'tools platform-tools'。ここで言う'tools'はAndroid SDKの
+          # レガシーな"tools"パッケージ(旧monitor/ddms等を含む古いSDK Tools)
+          # で、Googleのsdkmanagerリポジトリから既に削除されており、
+          # 常に "Failed to find package 'tools'" で失敗する
+          # (実行ログで確認: sdkmanagerがexit code 1で終了)。
+          # このビルドで実際に必要なのはadb等を含む platform-tools のみで、
+          # compileSdk/build-toolsはGradle(AGP)が google() リポジトリ経由で
+          # 自前解決するため、legacyな'tools'は不要。
+          packages: "platform-tools"
 
       - name: Set up Node.js
         uses: actions/setup-node@v6
