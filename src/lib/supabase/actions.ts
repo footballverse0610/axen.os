@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { createClient } from "./server";
+import { createAdminClient } from "./admin";
 import { translateAuthError } from "./error-messages";
 import { getCurrentUser } from "./get-current-user";
 import { getCurrentBusiness, setCurrentBusinessCookie } from "./business";
@@ -119,6 +120,36 @@ export async function signup(
 }
 
 export async function logout(): Promise<void> {
+  const supabase = await createClient();
+  await supabase.auth.signOut();
+  redirect("/login");
+}
+
+/**
+ * アカウントを完全に削除する(取り消し不可)。
+ *
+ * profiles/businesses は auth.users への外部キーが on delete cascade のため、
+ * businesses に紐づく business_ideas/tasks/goals/sales/expenses/coach_messages
+ * も含め、auth.users からユーザーを削除するだけで全ての関連データが
+ * DB側で連鎖削除される(supabase/migrations/001_initial_schema.sql参照)。
+ * アプリ側で個別テーブルを削除して回る必要はない。
+ *
+ * auth.admin.deleteUser()はRLSを完全にバイパスするService Role Keyでのみ
+ * 呼び出せるため、createAdminClient()(サーバー専用)を使う。
+ */
+export async function deleteAccount(): Promise<void> {
+  const user = await getCurrentUser();
+  if (!user) {
+    redirect("/login");
+  }
+
+  const adminClient = createAdminClient();
+  const { error } = await adminClient.auth.admin.deleteUser(user.id);
+  if (error) {
+    console.error("deleteAccount failed", error);
+    redirect("/settings?deleteAccountError=1");
+  }
+
   const supabase = await createClient();
   await supabase.auth.signOut();
   redirect("/login");

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Android 12 (API 31)以降のバックアップ/デバイス間移行ルール。
+    backup_rules.xml と同じ理由でWebViewのCookie/Local Storage等
+    (app_webview/、Supabase Authのセッションを含む)を除外する。
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="root" path="app_webview/" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="root" path="app_webview/" />
+    </device-transfer>
+</data-extraction-rules>

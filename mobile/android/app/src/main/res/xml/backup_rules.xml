@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    android:allowBackup="true" (AndroidManifest.xml) 向けのレガシー
+    フルバックアップ設定 (API 23-30。API 31+はdata_extraction_rules.xmlが優先される)。
+
+    app_webview/ ディレクトリはAndroid System WebView (Capacitorのブリッジが
+    使用するWebView) がCookie・Local Storage等を保存する場所で、Supabase Auth
+    のセッションCookieもここに含まれる。ここを除外しないと、端末のバックアップ
+    (Googleアカウントへの自動バックアップ等)にログインセッションが
+    含まれてしまうため、明示的に除外する。
+-->
+<full-backup-content>
+    <exclude domain="root" path="app_webview/" />
+</full-backup-content>

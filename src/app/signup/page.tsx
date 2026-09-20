@@ -13,9 +13,14 @@ export default function SignupPage() {
       <AuthCard
         subtitle="今日から、起業しよ。"
         footer={
-          <Link href="/login" className="font-medium text-foreground hover:underline">
-            すでにアカウントをお持ちですか？
-          </Link>
+          <div className="flex flex-col gap-3">
+            <Link href="/login" className="font-medium text-foreground hover:underline">
+              すでにアカウントをお持ちですか？
+            </Link>
+            <Link href="/privacy" className="text-xs text-muted-foreground hover:underline">
+              プライバシーポリシー
+            </Link>
+          </div>
         }
       >
         <SignupForm />
