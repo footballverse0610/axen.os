@@ -22,9 +22,34 @@ permissions:
   contents: read
 
 jobs:
+  check-release-secrets:
+    name: Check Release signing secrets
+    runs-on: ubuntu-latest
+    outputs:
+      has-signing: ${{ steps.check.outputs.has-signing }}
+    steps:
+      # secretsコンテキストはjob直下のif:では参照できない仕様のため、
+      # ここでstep(run:)の中で判定してjob outputとして公開し、
+      # 後続jobのif:からはneeds経由(needsコンテキストはjob-level ifで利用可能)
+      # で参照する。
+      - name: Check whether release signing secrets are set
+        id: check
+        env:
+          HAS_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+          HAS_STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD != '' }}
+          HAS_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS != '' }}
+          HAS_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD != '' }}
+        run: |
+          if [ "$HAS_KEYSTORE" = "true" ] && [ "$HAS_STORE_PASSWORD" = "true" ] && [ "$HAS_KEY_ALIAS" = "true" ] && [ "$HAS_KEY_PASSWORD" = "true" ]; then
+            echo "has-signing=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has-signing=false" >> "$GITHUB_OUTPUT"
+          fi
+
   build-release-aab:
     name: Build Android Release AAB
     runs-on: ubuntu-latest
+    needs: check-release-secrets
 
     # Release keystoreのSecretsが未登録の間は、このjob自体をskipする
     # (失敗ではなくskippedとして表示され、CI全体は緑のまま)。
@@ -38,7 +63,7 @@ jobs:
     # $RUNNER_TEMP(リポジトリ外の一時ディレクトリ)にのみ書き出すため、
     # チェックアウトしたワークツリー内には現れず、成果物アップロードの
     # 対象パスにも含まれない。
-    if: ${{ github.repository == 'footballverse0610/axen.os' && secrets.ANDROID_KEYSTORE_BASE64 != '' && secrets.ANDROID_KEYSTORE_PASSWORD != '' && secrets.ANDROID_KEY_ALIAS != '' && secrets.ANDROID_KEY_PASSWORD != '' }}
+    if: ${{ needs.check-release-secrets.outputs.has-signing == 'true' }}
 
     defaults:
       run:
