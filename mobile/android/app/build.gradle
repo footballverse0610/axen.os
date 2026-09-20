@@ -1,5 +1,20 @@
 apply plugin: 'com.android.application'
 
+// Release署名情報は環境変数からのみ読み込み、リポジトリには一切含めない。
+// GitHub Actions側でSecretsから復号したkeystoreファイルのパスと、
+// store/keyのパスワード・aliasを環境変数として渡す想定
+// (対応するSecrets名: ANDROID_KEYSTORE_BASE64 / ANDROID_KEYSTORE_PASSWORD /
+//  ANDROID_KEY_ALIAS / ANDROID_KEY_PASSWORD — CI側でbase64をデコードした
+//  ファイルパスをANDROID_KEYSTORE_PATHとして渡す)。
+// 環境変数が未設定の場合(=ローカル開発、またはSecrets未登録のCI)は
+// signingConfigを付与せず、releaseビルドは単に未署名のまま進む
+// (Play Storeには提出できないが、ビルド自体は壊れない)。
+def releaseKeystorePath = System.getenv("ANDROID_KEYSTORE_PATH")
+def releaseKeystorePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+def releaseKeyAlias = System.getenv("ANDROID_KEY_ALIAS")
+def releaseKeyPassword = System.getenv("ANDROID_KEY_PASSWORD")
+def hasReleaseSigningEnv = releaseKeystorePath && releaseKeystorePassword && releaseKeyAlias && releaseKeyPassword
+
 android {
     namespace = "com.kigyoshiyo.app"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -16,10 +31,25 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        release {
+            if (hasReleaseSigningEnv) {
+                storeFile file(releaseKeystorePath)
+                storePassword releaseKeystorePassword
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
+            }
+        }
+    }
     buildTypes {
         release {
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            // WebViewラッパー主体のシンプルなネイティブコードのため、
+            // R8による縮小・難読化・リソース圧縮を有効化してPlay提出用の
+            // AABサイズを最適化する(Debugビルドには一切影響しない)。
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig hasReleaseSigningEnv ? signingConfigs.release : null
         }
     }
 }
