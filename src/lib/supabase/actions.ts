@@ -322,9 +322,9 @@ function parseBusinessForm(formData: FormData): ParsedBusinessInput {
 }
 
 function validateBusinessInput(input: ParsedBusinessInput): string | null {
-  if (!input.name) {
-    return "事業名を入力してください。";
-  }
+  // 事業名は任意(起業初期は「アイデアはあるが事業名は未定」のケースが
+  // 普通にあるため)。空の場合はcreateBusiness/updateBusiness側で
+  // 仮の名前を自動的に割り当てる。
   if (input.name.length > MAX_NAME_LENGTH) {
     return `事業名は${MAX_NAME_LENGTH}文字以内で入力してください。`;
   }
@@ -363,11 +363,20 @@ export async function createBusiness(
   }
 
   const supabase = await createClient();
+
+  let name = parsed.name;
+  if (!name) {
+    const { count } = await supabase
+      .from("businesses")
+      .select("id", { count: "exact", head: true });
+    name = `事業${(count ?? 0) + 1}`;
+  }
+
   const { data, error } = await supabase
     .from("businesses")
     .insert({
       user_id: user.id,
-      name: parsed.name,
+      name,
       one_liner: parsed.oneLiner || null,
       industry: parsed.industry || null,
       stage: parsed.stage as BusinessStage,
@@ -418,11 +427,15 @@ export async function updateBusiness(
     return { error: validationError };
   }
 
+  // 編集フォームで事業名を空のまま送信した場合は、既存の値を維持する
+  // (事業名は任意項目だが、既に付いている名前を意図せず消さないため)。
+  const name = parsed.name || business.name;
+
   const supabase = await createClient();
   const { error } = await supabase
     .from("businesses")
     .update({
-      name: parsed.name,
+      name,
       one_liner: parsed.oneLiner || null,
       industry: parsed.industry || null,
       stage: parsed.stage as BusinessStage,

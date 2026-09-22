@@ -6,6 +6,7 @@ import {
   updateBusiness,
   type BusinessActionState,
 } from "@/lib/supabase/actions";
+import { INDUSTRY_OPTIONS, OTHER_INDUSTRY_VALUE } from "@/lib/onboarding-options";
 import type { Business } from "@/lib/supabase/types";
 
 const initialState: BusinessActionState = { error: null };
@@ -16,21 +17,6 @@ const STAGE_OPTIONS = [
   { value: "operating", label: "運営中" },
   { value: "paused", label: "一時停止" },
 ];
-
-/** 業種のプリセット候補。既存の industry(text) 列はそのまま自由記述文字列を保存する。 */
-const INDUSTRY_OPTIONS = [
-  "飲食",
-  "IT・Web",
-  "小売・EC",
-  "美容・健康",
-  "教育",
-  "コンサルティング",
-  "デザイン・クリエイティブ",
-  "製造",
-  "建設・不動産",
-  "医療・福祉",
-];
-const OTHER_INDUSTRY_VALUE = "__other__";
 
 const fieldClass =
   "rounded-xl border border-border bg-surface-muted px-4 py-3 text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground/20";
@@ -90,17 +76,16 @@ export function OnboardingForm({
     <form action={formAction} onSubmit={handleSubmit} className="flex flex-col gap-4">
       <div className="flex flex-col gap-1.5">
         <label htmlFor="name" className="text-xs font-medium text-muted-foreground">
-          事業名 <span className="text-red-400">*</span>
+          事業名（任意）
         </label>
         <input
           id="name"
           name="name"
           type="text"
-          required
           maxLength={100}
           defaultValue={business?.name}
           className={fieldClass}
-          placeholder="例：起業しよ。"
+          placeholder="決まっていなければ空欄でOK"
         />
       </div>
 

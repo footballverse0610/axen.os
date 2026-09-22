@@ -5,12 +5,14 @@ import { getCurrentUser } from "@/lib/supabase/get-current-user";
 import { getCurrentProfile } from "@/lib/supabase/profile";
 
 export const metadata: Metadata = {
-  title: "ようこそ | Axen OS",
+  title: "ようこそ | 起業しよ。",
 };
 
 /**
- * 初回オンボーディング(人生の目標・現状のヒアリング)。
- * 既存の事業作成onboarding(/onboarding)より前に案内する新しい入口。
+ * 初回オンボーディング(起業ステージ・事業内容・課題・目標のヒアリング)。
+ * このウィザード内で事業(businesses)も1件作成するため、完了後は
+ * (main)/layout.tsxのbusinesses.length===0チェックには通常到達しない
+ * (/onboardingは異常系のフォールバック経路として残す)。
  * 既にonboarding_completed===trueのユーザーには表示せず、
  * 直接アクセスされた場合もホームへ戻す
  * (「すでに完了したユーザーには毎回表示しない」という要件のため)。

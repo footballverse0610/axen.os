@@ -2,7 +2,7 @@ import "server-only";
 import { getDashboardData, type DashboardData } from "./dashboard";
 import { getCurrentProfile } from "./profile";
 import { calcBusinessSummary, calcGoalProgress } from "./finance";
-import { currentStateLabel, availableTimeLabel } from "../onboarding-options";
+import { weeklyTimeLabel } from "../onboarding-options";
 import type { Business, Profile } from "./types";
 
 /**
@@ -50,21 +50,18 @@ export function formatCoachContext(context: CoachContext): string {
   const lines: string[] = [];
 
   if (profile?.onboarding_completed) {
-    lines.push("ユーザーが初回登録時に伝えた希望:");
-    if (profile.main_goals.length > 0) {
-      lines.push(`- 変えたいこと: ${profile.main_goals.join("、")}`);
+    lines.push("ユーザーが初回登録時に伝えた起業の状況:");
+    if (profile.needs_idea_help) {
+      lines.push("- まだ事業アイデアが決まっていない。最初の会話ではアイデア出しを積極的にサポートすること。");
     }
-    if (profile.current_state) {
-      lines.push(`- 現在の状態: ${currentStateLabel[profile.current_state]}`);
+    if (profile.current_challenges.length > 0) {
+      lines.push(`- 今の課題: ${profile.current_challenges.join("、")}`);
     }
-    if (profile.three_month_goal) {
-      lines.push(`- 3ヶ月後の目標: ${profile.three_month_goal}`);
+    if (profile.weekly_available_time) {
+      lines.push(`- 起業に使える時間: ${weeklyTimeLabel[profile.weekly_available_time]}`);
     }
-    if (profile.available_time) {
-      lines.push(`- 1日に使える時間: ${availableTimeLabel[profile.available_time]}`);
-    }
-    if (profile.coach_preferences.length > 0) {
-      lines.push(`- AIコーチに求めること: ${profile.coach_preferences.join("、")}`);
+    if (profile.initial_budget_range) {
+      lines.push(`- 初期予算: ${profile.initial_budget_range}`);
     }
     lines.push("");
   }
