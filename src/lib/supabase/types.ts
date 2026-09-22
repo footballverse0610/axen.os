@@ -3,25 +3,24 @@
  * src/lib/types.ts はUIの仮データ用の型のため、こちらとは別に管理する。
  */
 
-export type OnboardingCurrentState =
-  | "serious"
-  | "has_goal_but_inconsistent"
-  | "unsure"
-  | "passive"
-  | "gradual";
-
-export type OnboardingAvailableTime = "min_5_10" | "min_15_30" | "min_30_60" | "hour_plus";
+/** オンボーディングQ5「起業に使える時間」(週あたり)。 */
+export type OnboardingWeeklyTime = "under_5h" | "5_15h" | "15_30h" | "over_30h";
 
 export interface Profile {
   id: string;
   display_name: string | null;
   avatar_url: string | null;
   onboarding_completed: boolean;
-  main_goals: string[];
-  current_state: OnboardingCurrentState | null;
-  three_month_goal: string | null;
-  available_time: OnboardingAvailableTime | null;
-  coach_preferences: string[];
+  /** オンボーディングQ3「今、一番の課題は？」で選択した項目(複数選択)。 */
+  current_challenges: string[];
+  weekly_available_time: OnboardingWeeklyTime | null;
+  /** オンボーディングQ6「初期予算」(任意)。未回答ならnull。 */
+  initial_budget_range: string | null;
+  /**
+   * オンボーディングQ1で「まだアイデアがない」を選んだユーザーはtrue。
+   * AI Coachが初回の会話でアイデア出しを優先するかどうかの分岐に使う。
+   */
+  needs_idea_help: boolean;
   created_at: string;
   updated_at: string;
 }
