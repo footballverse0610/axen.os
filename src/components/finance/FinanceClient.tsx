@@ -2,6 +2,7 @@
 
 import { ArrowDownRight, ArrowUpRight, Download, Plus, Pencil, Trash2, Wallet } from "lucide-react";
 import { useState } from "react";
+import { Capacitor } from "@capacitor/core";
 import { Bar } from "@/components/ui/Bar";
 import { Card } from "@/components/ui/Card";
 import { Modal } from "@/components/ui/Modal";
@@ -9,9 +10,12 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import { StatCard } from "@/components/ui/StatCard";
 import { formatYen } from "@/lib/finance";
 import { calcBusinessSummary } from "@/lib/supabase/finance";
+import { shareDownloadNatively } from "@/lib/capacitor/native-file-share";
 import type { Expense, Sale } from "@/lib/supabase/types";
 import { TransactionForm } from "./TransactionForm";
 import { DeleteTransactionModal } from "./DeleteTransactionModal";
+
+const EXPORT_URL = "/api/finance/export";
 
 export type FinanceEntry =
   | { kind: "sale"; data: Sale }
@@ -25,6 +29,28 @@ type ModalState =
 
 export function FinanceClient({ sales, expenses }: { sales: Sale[]; expenses: Expense[] }) {
   const [modal, setModal] = useState<ModalState>(null);
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+
+  /**
+   * Web版(iPhone Safariでのテストを含む)では何もせず、<a href>の通常の
+   * ブラウザナビゲーションに任せる(挙動は一切変更しない)。
+   * Androidネイティブアプリ内でのみ、Filesystem/Share経由の共有シートに
+   * 差し替える(理由はsrc/lib/capacitor/native-file-share.ts参照)。
+   */
+  async function handleExportClick(e: React.MouseEvent<HTMLAnchorElement>) {
+    if (!Capacitor.isNativePlatform()) {
+      return;
+    }
+    e.preventDefault();
+    setExportError(null);
+    setIsExporting(true);
+    const result = await shareDownloadNatively(EXPORT_URL);
+    setIsExporting(false);
+    if (result.error) {
+      setExportError(result.error);
+    }
+  }
 
   const { sales: salesTotal, expenses: expensesTotal, profit, margin } = calcBusinessSummary(
     sales,
@@ -47,11 +73,13 @@ export function FinanceClient({ sales, expenses }: { sales: Sale[]; expenses: Ex
         <p className="min-w-0 truncate text-sm text-muted-foreground">売上・経費を記録します。</p>
         <div className="flex shrink-0 items-center gap-2">
           <a
-            href="/api/finance/export"
-            className="flex items-center gap-1.5 rounded-full border border-border bg-surface px-3.5 py-2 text-xs font-semibold text-foreground transition-colors hover:bg-surface-muted"
+            href={EXPORT_URL}
+            onClick={handleExportClick}
+            aria-disabled={isExporting}
+            className="flex items-center gap-1.5 rounded-full border border-border bg-surface px-3.5 py-2 text-xs font-semibold text-foreground transition-colors hover:bg-surface-muted aria-disabled:pointer-events-none aria-disabled:opacity-60"
           >
             <Download className="h-3.5 w-3.5" aria-hidden />
-            CSV出力
+            {isExporting ? "出力中…" : "CSV出力"}
           </a>
           <button
             type="button"
@@ -63,6 +91,12 @@ export function FinanceClient({ sales, expenses }: { sales: Sale[]; expenses: Ex
           </button>
         </div>
       </section>
+
+      {exportError ? (
+        <p role="alert" className="text-sm text-red-400">
+          {exportError}
+        </p>
+      ) : null}
 
       <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <StatCard label="売上" value={formatYen(salesTotal)} />
