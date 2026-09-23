@@ -22,6 +22,29 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!--
+                Android App Links: メール確認・パスワードリセットのリンクを
+                外部ブラウザではなくこのアプリ内で開くための設定。
+                有効化にはVercel側の /.well-known/assetlinks.json に
+                実際の署名証明書のSHA-256フィンガープリントを記載する必要がある
+                (現時点ではプレースホルダーのため、autoVerifyは検証に失敗し
+                通常のブラウザで開く挙動にフォールバックする。既存の動作を
+                壊すものではない)。
+            -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="kigyoshiyo-footballverse0610.vercel.app"
+                    android:pathPrefix="/auth/confirm" />
+                <data
+                    android:scheme="https"
+                    android:host="kigyoshiyo-footballverse0610.vercel.app"
+                    android:pathPrefix="/update-password" />
+            </intent-filter>
+
         </activity>
 
         <provider
