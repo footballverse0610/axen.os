@@ -3,6 +3,20 @@ import { Directory, Encoding, Filesystem } from "@capacitor/filesystem";
 import { Share } from "@capacitor/share";
 
 /**
+ * @capacitor/share(8.0.2)のAndroid実装(SharePlugin.java)は、共有シートを
+ * ユーザーがキャンセルした場合にcall.reject("Share canceled")でPromiseを
+ * 拒否する(=正常な操作であってもJS側は例外として受け取る)。この文字列は
+ * @capacitor/share自体のソースにハードコードされた値で、当ファイルからは
+ * 変更できない・変更しない前提のため、Share.share()の失敗のみをこの文字列で
+ * 判定し、「キャンセル」と「実際のエラー」を区別する。
+ */
+const SHARE_CANCELED_MESSAGE = "Share canceled";
+
+function isShareCanceled(err: unknown): boolean {
+  return err instanceof Error && err.message === SHARE_CANCELED_MESSAGE;
+}
+
+/**
  * サーバーがContent-Dispositionでダウンロードさせようとしているレスポンスを、
  * Androidネイティブアプリ内では「端末のキャッシュ領域に保存→OS標準の共有シートを
  * 開く」方式に置き換える。
@@ -49,10 +63,20 @@ export async function shareDownloadNatively(url: string): Promise<{ error: strin
       directory: Directory.Cache,
     });
 
-    await Share.share({
-      title: filename,
-      url: uri,
-    });
+    try {
+      await Share.share({
+        title: filename,
+        url: uri,
+      });
+    } catch (shareErr) {
+      // ユーザーが共有シートを閉じた/キャンセルしただけなら、ダウンロード
+      // (Filesystemへの書き込み)自体は成功しているため、失敗として
+      // 扱わない。それ以外の共有時エラーは通常通り外側のcatchへ渡す。
+      if (isShareCanceled(shareErr)) {
+        return { error: null };
+      }
+      throw shareErr;
+    }
 
     return { error: null };
   } catch (err) {
