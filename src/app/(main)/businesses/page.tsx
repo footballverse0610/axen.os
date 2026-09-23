@@ -3,7 +3,7 @@ import { BusinessListClient } from "@/components/businesses/BusinessListClient";
 import { getCurrentBusiness, getUserBusinesses } from "@/lib/supabase/business";
 
 export const metadata: Metadata = {
-  title: "事業を切り替える | Axen OS",
+  title: "事業を切り替える | 起業しよ。",
 };
 
 export default async function BusinessesPage() {

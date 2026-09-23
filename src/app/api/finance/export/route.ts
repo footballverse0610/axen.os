@@ -105,7 +105,7 @@ export async function GET() {
 
   const csv = UTF8_BOM + buildCsv(csvRows);
   const today = new Date().toISOString().slice(0, 10);
-  const filename = `axen-os-finance-${today}.csv`;
+  const filename = `kigyoshiyo-finance-${today}.csv`;
 
   return new NextResponse(csv, {
     headers: {
