@@ -15,6 +15,15 @@ def releaseKeyAlias = System.getenv("ANDROID_KEY_ALIAS")
 def releaseKeyPassword = System.getenv("ANDROID_KEY_PASSWORD")
 def hasReleaseSigningEnv = releaseKeystorePath && releaseKeystorePassword && releaseKeyAlias && releaseKeyPassword
 
+// AdMob App ID。秘密情報ではない(APKを解析すれば誰でも読み取れる値)が、
+// 本番IDと開発・テストビルドを取り違えないよう、署名情報と同じ
+// 「環境変数を読み、未設定ならフォールバック」のパターンで扱う。
+// 未設定の場合はGoogle公式のテストApp IDを使う
+// (https://developers.google.com/admob/android/test-ads)。
+// 本番公開時はADMOB_APP_ID環境変数(CIならRepository Secret、ローカルなら
+// シェルのexport)に本番App IDを設定すること。
+def admobAppId = System.getenv("ADMOB_APP_ID") ?: "ca-app-pub-3940256099942544~3347511713"
+
 android {
     namespace = "com.kigyoshiyo.app"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -25,6 +34,7 @@ android {
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        manifestPlaceholders = [admobAppId: admobAppId]
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
              // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61

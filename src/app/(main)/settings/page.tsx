@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { SectionHeader } from "@/components/ui/SectionHeader";
+import { AdBanner } from "@/components/capacitor/AdBanner";
 import { ChangePasswordForm } from "@/components/settings/ChangePasswordForm";
 import { DeleteAccountButton } from "@/components/settings/DeleteAccountButton";
 import { LogoutButton } from "@/components/settings/LogoutButton";
@@ -39,6 +40,8 @@ export default async function SettingsPage({
 
   return (
     <div className="flex flex-col gap-8">
+      <AdBanner />
+
       <section>
         <h2 className="text-xl font-semibold tracking-tight text-foreground">設定</h2>
       </section>

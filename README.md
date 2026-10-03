@@ -89,3 +89,34 @@ Supabaseがホストする確認ページを経由してしまい、このアプ
 `src/app/auth/confirm/route.ts`の`resolveSafeNextPath()`を参照）。
 `next`を省略した場合は`/update-password`にフォールバックするため、
 signup確認メールのテンプレートでは`next=/`を明示的に指定してください。
+
+## AdMob設定（本番環境）
+
+Android版アプリの設定（Settings）画面にのみ、バナー広告（Google AdMob）を実装
+しています。現在のコードはGoogle公式のテスト広告ID
+（https://developers.google.com/admob/android/test-ads）を既定値として使用して
+おり、本番のAdMob IDへ切り替えるまでは、実機で表示される広告はすべてテスト広告
+です（誤タップしてもGoogle広告主に課金されません）。
+
+本番のAdMob IDへ切り替えるには、以下の**2箇所**の設定が必要です。どちらか一方
+だけを設定するとテスト広告と本番広告が混在した状態になるため、**必ず両方を同時
+に設定してください**。
+
+1. **バナー広告のAd Unit ID**（Vercelの環境変数）
+   AdMob管理画面で発行したバナー広告ユニットID
+   （`ca-app-pub-xxxxxxxxxxxxxxxx/xxxxxxxxxx`の形式）を、Vercel Dashboard >
+   Settings > Environment Variables で、Production環境の
+   `NEXT_PUBLIC_ADMOB_BANNER_AD_UNIT_ID` に設定する（`.env.example`参照）。
+   この値は秘密情報ではない（配布したAPKを解析すれば誰でも読み取れる）ため、
+   `NEXT_PUBLIC_`を付けてクライアントに公開する設計で問題ない。
+
+2. **AdMob App ID**（GitHub Actions Secrets）
+   AdMob管理画面で発行したApp ID（`ca-app-pub-xxxxxxxxxxxxxxxx~xxxxxxxxxx`の
+   形式）を、GitHubリポジトリ > Settings > Secrets and variables > Actions で、
+   `ADMOB_APP_ID`という名前のRepository Secretとして追加する（既存のRelease
+   署名用Secrets、`ANDROID_KEYSTORE_BASE64`等と同じ場所）。
+   `mobile/android/app/build.gradle`がビルド時にこの環境変数を読み込み、
+   `mobile/android/app/src/main/AndroidManifest.xml`へmanifest placeholder経由
+   で注入する。現時点では`.github/workflows/android-build.yml`はこのSecretを
+   ビルドへ渡していないため、本番公開前に、Release AABをビルドするstepの`env:`
+   に`ADMOB_APP_ID: ${{ secrets.ADMOB_APP_ID }}`を追加すること。

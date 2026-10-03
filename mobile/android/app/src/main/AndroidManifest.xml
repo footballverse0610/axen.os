@@ -56,6 +56,17 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths"></meta-data>
         </provider>
+
+        <!--
+            Google AdMob (バナー広告)。App IDはGoogleの仕様上ここへの宣言が必須
+            (Capacitorプラグイン側では自動付与されない)。値は${admobAppId}という
+            manifest placeholder経由で、mobile/android/app/build.gradleから注入する
+            (本番署名用の環境変数と同じ仕組み)。未設定時はGoogle公式テストApp IDが
+            使われるため、このファイル自体に本番IDを直接書くことはない。
+        -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="${admobAppId}" />
     </application>
 
     <!-- Permissions -->
