@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { NotificationScheduler } from "@/components/capacitor/NotificationScheduler";
 import { getCurrentBusiness, getUserBusinesses } from "@/lib/supabase/business";
 import { getCurrentUser } from "@/lib/supabase/get-current-user";
 import { getCurrentProfile } from "@/lib/supabase/profile";
@@ -32,6 +33,7 @@ export default async function MainLayout({ children }: LayoutProps<"/">) {
 
   return (
     <div className="flex flex-1">
+      <NotificationScheduler />
       <Sidebar />
       <div className="flex flex-1 flex-col">
         <Header

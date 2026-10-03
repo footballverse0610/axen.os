@@ -21,6 +21,10 @@ export interface Profile {
    * AI Coachが初回の会話でアイデア出しを優先するかどうかの分岐に使う。
    */
   needs_idea_help: boolean;
+  /** タスク/目標期限のローカル通知(Android)を有効にしているか。 */
+  notifications_enabled: boolean;
+  /** 通知を送る時刻("HH:MM:SS"、端末ローカル時刻)。 */
+  notification_time: string;
   created_at: string;
   updated_at: string;
 }

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { navItems } from "@/lib/nav-items";
 import { logout } from "@/lib/supabase/actions";
+import { cancelAllReminders } from "@/lib/capacitor/notifications";
 import { BusinessSwitcher } from "./BusinessSwitcher";
 import type { Business } from "@/lib/supabase/types";
 
@@ -28,6 +29,13 @@ export function Header({
       : "?";
   const avatarLabel = displayName || userEmail || "設定";
 
+  async function handleLogout() {
+    // 別ユーザーの通知が端末に残らないよう、ログアウト前に
+    // このアプリが予約したローカル通知をすべて取り消す(Web版では no-op)。
+    await cancelAllReminders();
+    await logout();
+  }
+
   return (
     <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-border bg-background/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80 md:px-8 md:py-4">
       <div className="flex min-w-0 flex-col gap-1">
@@ -45,16 +53,15 @@ export function Header({
         >
           {avatarIcon || initial}
         </Link>
-        <form action={logout}>
-          <button
-            type="submit"
-            aria-label="ログアウト"
-            title="ログアウト"
-            className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-surface-muted hover:text-foreground"
-          >
-            <LogOut className="h-4 w-4" aria-hidden />
-          </button>
-        </form>
+        <button
+          type="button"
+          onClick={handleLogout}
+          aria-label="ログアウト"
+          title="ログアウト"
+          className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-surface-muted hover:text-foreground"
+        >
+          <LogOut className="h-4 w-4" aria-hidden />
+        </button>
       </div>
     </header>
   );

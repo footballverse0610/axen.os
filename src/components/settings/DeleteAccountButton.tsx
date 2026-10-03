@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useFormStatus } from "react-dom";
 import { Modal } from "@/components/ui/Modal";
 import { deleteAccount } from "@/lib/supabase/actions";
+import { cancelAllReminders } from "@/lib/capacitor/notifications";
 
 /** 送信開始と同時にボタンを無効化し、連打による多重送信を防ぐ。 */
 function DeleteSubmitButton({ confirmed }: { confirmed: boolean }) {
@@ -24,7 +25,15 @@ function ConfirmDeleteForm({ onClose }: { onClose: () => void }) {
   const [confirmed, setConfirmed] = useState(false);
 
   return (
-    <form action={deleteAccount} className="flex flex-col gap-4">
+    <form
+      action={deleteAccount}
+      onSubmit={() => {
+        // 削除後に別ユーザーが同じ端末でログインしても通知が残らないよう、
+        // アカウント削除時にもローカル通知をすべて取り消す(Web版では no-op)。
+        void cancelAllReminders();
+      }}
+      className="flex flex-col gap-4"
+    >
       <p className="text-sm leading-relaxed text-foreground">
         アカウントを削除すると、プロフィール・事業・アイデア・タスク・目標・売上/経費の記録・AI
         Coachとの会話履歴を含む、すべてのデータが完全に削除されます。この操作は取り消せません。

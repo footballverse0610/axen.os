@@ -1,15 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { LogOut } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { ChangePasswordForm } from "@/components/settings/ChangePasswordForm";
 import { DeleteAccountButton } from "@/components/settings/DeleteAccountButton";
+import { LogoutButton } from "@/components/settings/LogoutButton";
+import { NotificationSettingsForm } from "@/components/settings/NotificationSettingsForm";
 import { ProfileForm } from "@/components/settings/ProfileForm";
 import { getCurrentUser } from "@/lib/supabase/get-current-user";
 import { getCurrentProfile } from "@/lib/supabase/profile";
-import { logout } from "@/lib/supabase/actions";
 
 export const metadata: Metadata = {
   title: "設定 | 起業しよ。",
@@ -51,6 +51,13 @@ export default async function SettingsPage({
       </section>
 
       <section>
+        <SectionHeader title="通知" />
+        <Card>
+          <NotificationSettingsForm profile={profile} />
+        </Card>
+      </section>
+
+      <section>
         <SectionHeader title="アカウント" />
         <Card className="flex flex-col gap-5">
           <div className="flex flex-col gap-1.5">
@@ -80,15 +87,7 @@ export default async function SettingsPage({
       <section>
         <SectionHeader title="セッション" />
         <Card>
-          <form action={logout}>
-            <button
-              type="submit"
-              className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-border py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-surface-muted"
-            >
-              <LogOut className="h-4 w-4" aria-hidden />
-              ログアウト
-            </button>
-          </form>
+          <LogoutButton />
         </Card>
       </section>
 
