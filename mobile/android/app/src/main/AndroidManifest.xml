@@ -37,11 +37,11 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data
                     android:scheme="https"
-                    android:host="kigyoshiyo-footballverse0610.vercel.app"
+                    android:host="kigyoshiyo-kigyomen.vercel.app"
                     android:pathPrefix="/auth/confirm" />
                 <data
                     android:scheme="https"
-                    android:host="kigyoshiyo-footballverse0610.vercel.app"
+                    android:host="kigyoshiyo-kigyomen.vercel.app"
                     android:pathPrefix="/update-password" />
             </intent-filter>
 

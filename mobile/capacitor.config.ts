@@ -4,7 +4,7 @@ import type { CapacitorConfig } from "@capacitor/cli";
  * 「起業しよ。」Androidアプリ(Capacitorラッパー)の設定。
  *
  * server.url はユーザーから提示されたVercel本番URL
- * (https://kigyoshiyo-footballverse0610.vercel.app/)を使用している。
+ * (https://kigyoshiyo-kigyomen.vercel.app/)を使用している。
  * 本番ドメインが今後カスタムドメインに変わった場合は、この値を
  * 書き換えること。
  *
@@ -16,7 +16,7 @@ const config: CapacitorConfig = {
   appName: "起業しよ。",
   webDir: "www",
   server: {
-    url: "https://kigyoshiyo-footballverse0610.vercel.app",
+    url: "https://kigyoshiyo-kigyomen.vercel.app",
     // 本番URLは常にHTTPSのため平文HTTPは許可しない
     cleartext: false,
     androidScheme: "https",
