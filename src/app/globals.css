@@ -44,6 +44,54 @@
   --color-red-400: #dc2626;
   --color-amber-400: #b45309;
   --color-green-400: #15803d;
+
+  /* 初期値はライト。実際の初回ペイントはThemeScriptがJS実行前に決定する。 */
+  color-scheme: light;
+}
+
+/*
+ * ダークテーマ。ライトテーマと同じトークン構成を保ったまま、
+ * 値だけを「起業しよ。」が元々採用していたダーク配色(黒〜ダークグレー)へ
+ * 差し替える。ブランドカラー(primary/success/warning/danger)の色相自体は
+ * ライト/ダークで共通にし、一貫したブランド感を保つ。
+ *
+ * data-theme属性はThemeScript(初回/hydration前)とThemeProvider(切り替え時)が
+ * <html>へ設定する。このブロックは@layerに属さないため、Tailwind本体の
+ * デフォルト定義より優先される(:rootブロックと同様)。
+ */
+:root[data-theme="dark"] {
+  --background: #0a0a0a;
+  --foreground: #f5f5f5;
+  --surface: #141414;
+  --surface-muted: #1f1f1f;
+  --border: #2a2a2a;
+  --muted-foreground: #a1a1a1;
+  --accent: #f5f5f5;
+
+  --primary: #635bff;
+  /* ライトでは「濃くする」方向のhover、ダークでは背景に沈まないよう
+     「明るくする」方向のhoverにする(brand-accentと同じ色を再利用)。 */
+  --primary-dark: #8b7cff;
+  --brand-accent: #8b7cff;
+
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+
+  /* 暗い背景では黒いshadowの代わりに、わずかに強めた黒と控えめな発光で
+     「浮いている」より「整理されている」印象を保つ。 */
+  --shadow-card: 0 1px 2px 0 rgb(0 0 0 / 0.5), 0 2px 8px -2px rgb(0 0 0 / 0.4);
+  --shadow-card-primary: 0 1px 2px 0 rgb(99 91 255 / 0.15), 0 4px 16px -2px rgb(99 91 255 / 0.35);
+
+  /*
+   * ライトテーマ用に濃くした-400系を、暗い背景でも読みやすいTailwind既定の
+   * 明るさへ戻す(「起業しよ。」が元々ダークテーマ単体だった頃と同じ値)。
+   */
+  --color-red-400: #f87171;
+  --color-amber-400: #fbbf24;
+  --color-green-400: #4ade80;
+
+  color-scheme: dark;
 }
 
 @theme inline {
@@ -73,6 +121,20 @@ body {
 }
 
 /*
+ * テーマ切り替え時に配色が自然に馴染むようにする短いtransition。
+ * 初回ペイントはThemeScriptがJS実行前にdata-theme属性を確定させるため、
+ * ページ読み込み時にこのtransitionが働くことはない(値が変化するのは
+ * ユーザーがテーマを切り替えた時、または「システム」選択中に端末の
+ * 設定が変わった時のみ)。
+ */
+*,
+*::before,
+*::after {
+  transition: background-color 200ms ease, border-color 200ms ease, color 200ms ease,
+    fill 200ms ease, stroke 200ms ease, box-shadow 200ms ease;
+}
+
+/*
  * タップした瞬間に反応が返るようにするための共通スタイル。
  * - iOS/Android標準のタップハイライト(遅れて出るグレーのフラッシュ)を消し、
  *   代わりに即座に反応するscale()の押し込み表現に統一する。
@@ -92,7 +154,8 @@ a,
 button:not(:disabled),
 a,
 [role="button"]:not([aria-disabled="true"]) {
-  transition: transform 100ms ease-out;
+  transition: transform 100ms ease-out, background-color 200ms ease, border-color 200ms ease,
+    color 200ms ease, fill 200ms ease, stroke 200ms ease, box-shadow 200ms ease;
 }
 
 button:not(:disabled):active,
@@ -120,6 +183,12 @@ select:focus-visible {
   button:not(:disabled),
   a,
   [role="button"] {
+    transition: none;
+  }
+
+  *,
+  *::before,
+  *::after {
     transition: none;
   }
 }

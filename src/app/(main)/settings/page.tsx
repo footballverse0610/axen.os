@@ -9,6 +9,7 @@ import { DeleteAccountButton } from "@/components/settings/DeleteAccountButton";
 import { LogoutButton } from "@/components/settings/LogoutButton";
 import { NotificationSettingsForm } from "@/components/settings/NotificationSettingsForm";
 import { ProfileForm } from "@/components/settings/ProfileForm";
+import { ThemeToggle } from "@/components/settings/ThemeToggle";
 import { getCurrentUser } from "@/lib/supabase/get-current-user";
 import { getCurrentProfile } from "@/lib/supabase/profile";
 
@@ -50,6 +51,13 @@ export default async function SettingsPage({
         <SectionHeader title="プロフィール" />
         <Card>
           <ProfileForm profile={profile} />
+        </Card>
+      </section>
+
+      <section>
+        <SectionHeader title="テーマ" />
+        <Card>
+          <ThemeToggle />
         </Card>
       </section>
 
