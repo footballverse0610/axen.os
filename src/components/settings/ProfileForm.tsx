@@ -8,7 +8,7 @@ import type { Profile } from "@/lib/supabase/types";
 const initialState: ProfileActionState = { error: null };
 
 const fieldClass =
-  "rounded-xl border border-border bg-surface-muted px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground/20";
+  "rounded-xl border border-border bg-surface-muted px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20";
 
 export function ProfileForm({ profile }: { profile: Profile | null }) {
   const [state, formAction, isPending] = useActionState(updateProfile, initialState);
@@ -46,8 +46,8 @@ export function ProfileForm({ profile }: { profile: Profile | null }) {
                 aria-label={`アイコン ${icon}`}
                 className={`flex h-10 w-10 items-center justify-center rounded-full border text-lg transition-colors ${
                   isSelected
-                    ? "border-foreground bg-foreground/10"
-                    : "border-border bg-surface-muted hover:border-foreground/40"
+                    ? "border-primary bg-primary/10"
+                    : "border-border bg-surface-muted hover:border-primary/40"
                 }`}
               >
                 {icon}
@@ -65,12 +65,12 @@ export function ProfileForm({ profile }: { profile: Profile | null }) {
           {state.error}
         </p>
       ) : null}
-      {state.success ? <p className="text-sm text-emerald-400">保存しました。</p> : null}
+      {state.success ? <p className="text-sm text-green-400">保存しました。</p> : null}
 
       <button
         type="submit"
         disabled={isPending}
-        className="mt-1 w-full rounded-xl bg-foreground py-2.5 text-sm font-semibold text-background transition-opacity hover:opacity-90 disabled:opacity-60 sm:w-auto sm:self-start sm:px-6"
+        className="mt-1 w-full rounded-xl bg-primary py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60 sm:w-auto sm:self-start sm:px-6"
       >
         {isPending ? "保存中…" : "プロフィールを保存"}
       </button>

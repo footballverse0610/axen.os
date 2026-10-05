@@ -31,7 +31,7 @@ export default function RootError({
         <button
           type="button"
           onClick={reset}
-          className="mt-2 rounded-xl bg-foreground px-4 py-2 text-sm font-semibold text-background transition-opacity hover:opacity-90"
+          className="mt-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
         >
           再読み込み
         </button>

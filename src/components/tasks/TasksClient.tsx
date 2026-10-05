@@ -76,7 +76,7 @@ export function TasksClient({ tasks }: { tasks: Task[] }) {
           <button
             type="button"
             onClick={() => setModal({ type: "create" })}
-            className="mt-2 flex items-center gap-1.5 rounded-full bg-foreground px-4 py-2 text-xs font-semibold text-background transition-opacity hover:opacity-90"
+            className="mt-2 flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-semibold text-white transition-opacity hover:opacity-90"
           >
             <Plus className="h-3.5 w-3.5" aria-hidden />
             タスクを追加
@@ -101,7 +101,7 @@ export function TasksClient({ tasks }: { tasks: Task[] }) {
         <button
           type="button"
           onClick={() => setModal({ type: "create" })}
-          className="flex shrink-0 items-center gap-1.5 rounded-full bg-foreground px-3.5 py-2 text-xs font-semibold text-background transition-opacity hover:opacity-90"
+          className="flex shrink-0 items-center gap-1.5 rounded-full bg-primary px-3.5 py-2 text-xs font-semibold text-white transition-opacity hover:opacity-90"
         >
           <Plus className="h-3.5 w-3.5" aria-hidden />
           追加
@@ -229,12 +229,12 @@ function TaskRow({
         disabled={isPending}
         className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors disabled:opacity-60 ${
           task.done
-            ? "border-emerald-400 bg-emerald-400/20"
+            ? "border-green-400 bg-green-400/20"
             : "border-border bg-transparent"
         }`}
       >
         {task.done ? (
-          <span className="h-2 w-2 rounded-sm bg-emerald-400" aria-hidden />
+          <span className="h-2 w-2 rounded-sm bg-green-400" aria-hidden />
         ) : null}
       </button>
       <div className="min-w-0 flex-1">

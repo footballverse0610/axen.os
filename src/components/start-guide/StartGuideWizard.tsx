@@ -119,7 +119,7 @@ export function StartGuideWizard({
                 onChange={(e) => setWantOther(e.target.value)}
                 maxLength={100}
                 placeholder="やりたいことを入力してください"
-                className="rounded-xl border border-border bg-surface-muted px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground/20"
+                className="rounded-xl border border-border bg-surface-muted px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
             ) : null}
           </fieldset>
@@ -145,7 +145,7 @@ export function StartGuideWizard({
                 onChange={(e) => setBlockerOther(e.target.value)}
                 maxLength={100}
                 placeholder="困っていることを入力してください"
-                className="rounded-xl border border-border bg-surface-muted px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground/20"
+                className="rounded-xl border border-border bg-surface-muted px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
             ) : null}
           </fieldset>
@@ -167,7 +167,7 @@ export function StartGuideWizard({
           type="button"
           onClick={handleNext}
           disabled={!canProceed()}
-          className="flex-1 rounded-xl bg-foreground py-3 text-sm font-semibold text-background transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+          className="flex-1 rounded-xl bg-primary py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
         >
           次へ
         </button>

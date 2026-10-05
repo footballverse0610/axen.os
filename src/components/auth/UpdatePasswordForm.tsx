@@ -27,7 +27,7 @@ export function UpdatePasswordForm() {
           minLength={6}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="rounded-xl border border-border bg-surface-muted px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground/20"
+          className="rounded-xl border border-border bg-surface-muted px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
           placeholder="6文字以上"
         />
       </div>
@@ -45,7 +45,7 @@ export function UpdatePasswordForm() {
           minLength={6}
           value={passwordConfirm}
           onChange={(e) => setPasswordConfirm(e.target.value)}
-          className="rounded-xl border border-border bg-surface-muted px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground/20"
+          className="rounded-xl border border-border bg-surface-muted px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
           placeholder="もう一度入力"
         />
         {passwordMismatch ? (
@@ -62,7 +62,7 @@ export function UpdatePasswordForm() {
       <button
         type="submit"
         disabled={isPending || passwordMismatch}
-        className="mt-2 w-full rounded-xl bg-foreground py-2.5 text-sm font-semibold text-background transition-opacity hover:opacity-90 disabled:opacity-60"
+        className="mt-2 w-full rounded-xl bg-primary py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
       >
         {isPending ? "更新中…" : "パスワードを更新"}
       </button>

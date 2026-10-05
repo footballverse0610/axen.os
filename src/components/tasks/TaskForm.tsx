@@ -15,7 +15,7 @@ const PRIORITY_OPTIONS = [
 const initialState: TaskActionState = { error: null };
 
 const fieldClass =
-  "rounded-xl border border-border bg-surface-muted px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground/20";
+  "rounded-xl border border-border bg-surface-muted px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20";
 
 export function TaskForm({ task, onDone }: { task?: Task; onDone: () => void }) {
   const action = task ? updateTask : createTask;
@@ -115,7 +115,7 @@ export function TaskForm({ task, onDone }: { task?: Task; onDone: () => void }) 
       <button
         type="submit"
         disabled={isPending}
-        className="mt-1 w-full rounded-xl bg-foreground py-2.5 text-sm font-semibold text-background transition-opacity hover:opacity-90 disabled:opacity-60"
+        className="mt-1 w-full rounded-xl bg-primary py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
       >
         {isPending ? "保存中…" : task ? "変更を保存" : "タスクを追加"}
       </button>

@@ -46,7 +46,7 @@ export function IdeasClient({ ideas }: { ideas: BusinessIdea[] }) {
           <button
             type="button"
             onClick={() => setModal({ type: "create" })}
-            className="mt-2 flex items-center gap-1.5 rounded-full bg-foreground px-4 py-2 text-xs font-semibold text-background transition-opacity hover:opacity-90"
+            className="mt-2 flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-semibold text-white transition-opacity hover:opacity-90"
           >
             <Plus className="h-3.5 w-3.5" aria-hidden />
             アイデアを追加
@@ -71,7 +71,7 @@ export function IdeasClient({ ideas }: { ideas: BusinessIdea[] }) {
         <button
           type="button"
           onClick={() => setModal({ type: "create" })}
-          className="flex shrink-0 items-center gap-1.5 rounded-full bg-foreground px-3.5 py-2 text-xs font-semibold text-background transition-opacity hover:opacity-90"
+          className="flex shrink-0 items-center gap-1.5 rounded-full bg-primary px-3.5 py-2 text-xs font-semibold text-white transition-opacity hover:opacity-90"
         >
           <Plus className="h-3.5 w-3.5" aria-hidden />
           追加
@@ -86,7 +86,7 @@ export function IdeasClient({ ideas }: { ideas: BusinessIdea[] }) {
             onClick={() => setActiveFilter(filter.value)}
             className={`shrink-0 rounded-full border px-3.5 py-1.5 text-xs font-medium transition-colors ${
               activeFilter === filter.value
-                ? "border-foreground bg-foreground text-background"
+                ? "border-primary bg-primary text-white"
                 : "border-border bg-surface text-muted-foreground hover:text-foreground"
             }`}
           >

@@ -5,9 +5,9 @@ import { Card } from "@/components/ui/Card";
 /** ホーム画面の「何から始める？」入口。/start-guideの診断へ誘導する。 */
 export function StartGuideCard() {
   return (
-    <Card className="flex items-start gap-4 border-white/10 bg-surface-muted/60">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-foreground/10">
-        <Compass className="h-5 w-5 text-foreground" aria-hidden />
+    <Card variant="primary" className="flex items-start gap-4">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
+        <Compass className="h-5 w-5 text-primary" aria-hidden />
       </div>
       <div className="flex-1">
         <p className="text-sm font-semibold text-foreground">何から始める？</p>
@@ -17,7 +17,7 @@ export function StartGuideCard() {
         </p>
         <Link
           href="/start-guide"
-          className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-foreground"
+          className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-primary transition-colors hover:text-primary-dark"
         >
           最初の一歩を決める
           <ArrowRight className="h-3.5 w-3.5" aria-hidden />

@@ -19,7 +19,7 @@ const STAGE_OPTIONS = [
 ];
 
 const fieldClass =
-  "rounded-xl border border-border bg-surface-muted px-4 py-3 text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground/20";
+  "rounded-xl border border-border bg-surface-muted px-4 py-3 text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20";
 
 /**
  * 事業の作成(初回オンボーディング/2つ目以降の追加)と編集(現在選択中の事業のみ)
@@ -175,7 +175,7 @@ export function OnboardingForm({
       <button
         type="submit"
         disabled={isPending}
-        className="mt-2 w-full rounded-xl bg-foreground py-3 text-sm font-semibold text-background transition-opacity hover:opacity-90 disabled:opacity-60"
+        className="mt-2 w-full rounded-xl bg-primary py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
       >
         {isPending ? (business ? "保存中…" : "作成中…") : submitLabel}
       </button>

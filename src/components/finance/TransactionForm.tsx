@@ -16,7 +16,7 @@ import type { FinanceEntry } from "./FinanceClient";
 const initialState: FinanceActionState = { error: null };
 
 const fieldClass =
-  "rounded-xl border border-border bg-surface-muted px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground/20";
+  "rounded-xl border border-border bg-surface-muted px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20";
 
 /** 金額欄の入力補助。「単価×数量」と「電卓」は同時に開かず、片方だけ表示する。 */
 type AmountAid = "none" | "unitPrice" | "calculator";
@@ -124,7 +124,7 @@ export function TransactionForm({
             onClick={() => setKind("sale")}
             className={`flex-1 rounded-xl border py-2 text-sm font-semibold transition-colors ${
               kind === "sale"
-                ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400"
+                ? "border-green-500/40 bg-green-500/10 text-green-400"
                 : "border-border bg-surface-muted text-muted-foreground hover:text-foreground"
             }`}
           >
@@ -205,7 +205,7 @@ export function TransactionForm({
                 aria-pressed={aid === "unitPrice"}
                 className={`rounded-full border px-2 py-1 text-[11px] font-medium transition-colors ${
                   aid === "unitPrice"
-                    ? "border-foreground bg-foreground text-background"
+                    ? "border-primary bg-primary text-white"
                     : "border-border bg-surface-muted text-muted-foreground hover:text-foreground"
                 }`}
               >
@@ -218,7 +218,7 @@ export function TransactionForm({
                 aria-label="電卓を開く"
                 className={`flex h-6 w-6 items-center justify-center rounded-full border transition-colors ${
                   aid === "calculator"
-                    ? "border-foreground bg-foreground text-background"
+                    ? "border-primary bg-primary text-white"
                     : "border-border bg-surface-muted text-muted-foreground hover:text-foreground"
                 }`}
               >
@@ -354,7 +354,7 @@ export function TransactionForm({
       <button
         type="submit"
         disabled={isPending}
-        className="mt-1 w-full rounded-xl bg-foreground py-2.5 text-sm font-semibold text-background transition-opacity hover:opacity-90 disabled:opacity-60"
+        className="mt-1 w-full rounded-xl bg-primary py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
       >
         {isPending ? "保存中…" : entry ? "変更を保存" : "登録する"}
       </button>

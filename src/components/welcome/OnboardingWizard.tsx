@@ -93,7 +93,7 @@ export function OptionCard({
       aria-pressed={selected}
       className={`flex w-full items-center justify-between gap-3 rounded-2xl border px-4 py-3.5 text-left text-sm font-medium transition-colors ${
         selected
-          ? "border-foreground bg-foreground text-background"
+          ? "border-primary bg-primary text-white"
           : "border-border bg-surface text-foreground hover:bg-surface-muted"
       }`}
     >
@@ -104,7 +104,7 @@ export function OptionCard({
 }
 
 const fieldClass =
-  "rounded-xl border border-border bg-surface-muted px-4 py-3 text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground/20";
+  "rounded-xl border border-border bg-surface-muted px-4 py-3 text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20";
 
 export function OnboardingWizard() {
   const [stepId, setStepId] = useState<StepId>("intro");
@@ -453,7 +453,7 @@ export function OnboardingWizard() {
           type="button"
           onClick={handleNext}
           disabled={!canProceed() || isPending}
-          className="flex-1 rounded-xl bg-foreground py-3 text-sm font-semibold text-background transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+          className="flex-1 rounded-xl bg-primary py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
         >
           {isPending
             ? "作成中…"

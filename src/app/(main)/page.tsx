@@ -77,14 +77,14 @@ export default async function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <section>
-        <p className="text-sm text-muted-foreground">おかえりなさい</p>
-        <h2 className="mt-1 text-xl font-semibold tracking-tight text-foreground">
+      <section className="animate-fade-in-up">
+        <p className="text-xs font-medium text-muted-foreground">おかえりなさい</p>
+        <h2 className="mt-1 text-2xl font-semibold tracking-tight text-foreground">
           {business.name}の状態
         </h2>
       </section>
 
-      <section>
+      <section className="animate-fade-in-up">
         <StartGuideCard />
       </section>
 
@@ -95,18 +95,19 @@ export default async function DashboardPage() {
           value={formatYen(profit)}
           delta={`利益率 ${margin}%`}
           deltaTone={profit >= 0 ? "good" : "critical"}
+          emphasize
         />
         <StatCard label="未完了タスク" value={String(openTasks.length)} />
         <StatCard label="ビジネスアイデア" value={String(businessIdeas.length)} />
       </section>
 
       <section>
-        <Card className="flex items-start gap-4 border-white/10 bg-surface-muted/60">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-foreground/10">
-            <Sparkles className="h-5 w-5 text-foreground" aria-hidden />
+        <Card variant="primary" className="flex items-start gap-4">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-brand-accent">
+            <Sparkles className="h-5 w-5 text-white" aria-hidden />
           </div>
           <div className="flex-1">
-            <p className="text-xs font-medium text-muted-foreground">
+            <p className="text-xs font-semibold text-primary">
               AI Business Coach
             </p>
             <p className="mt-1 text-sm leading-relaxed text-foreground">
@@ -116,7 +117,7 @@ export default async function DashboardPage() {
             </p>
             <Link
               href="/coach"
-              className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-foreground"
+              className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-primary transition-colors hover:text-primary-dark"
             >
               コーチに相談する
               <ArrowRight className="h-3.5 w-3.5" aria-hidden />
@@ -129,7 +130,11 @@ export default async function DashboardPage() {
         <SectionHeader title="今日やること" href="/tasks" />
         <div className="flex flex-col gap-2">
           {displayTasks.map((task) => (
-            <Card key={task.id} className="flex items-center justify-between gap-3 py-3">
+            <Card
+              key={task.id}
+              variant={task.id === topTask?.id ? "primary" : "standard"}
+              className="flex items-center justify-between gap-3 py-3"
+            >
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium text-foreground">{task.title}</p>
                 <p className="mt-0.5 text-xs text-muted-foreground">{task.category}</p>
@@ -138,7 +143,7 @@ export default async function DashboardPage() {
             </Card>
           ))}
           {displayTasks.length === 0 ? (
-            <Card className="text-sm text-muted-foreground">
+            <Card variant="secondary" className="text-sm text-muted-foreground">
               未完了のタスクはありません。
             </Card>
           ) : null}
@@ -163,7 +168,7 @@ export default async function DashboardPage() {
             </Card>
           ))}
           {topIdeas.length === 0 ? (
-            <Card className="text-sm text-muted-foreground">
+            <Card variant="secondary" className="text-sm text-muted-foreground">
               まだビジネスアイデアが登録されていません。
             </Card>
           ) : null}
@@ -200,11 +205,11 @@ export default async function DashboardPage() {
                 <div className="flex min-w-0 items-center gap-3">
                   <div
                     className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
-                      isSale ? "bg-emerald-500/10" : "bg-red-500/10"
+                      isSale ? "bg-green-500/10" : "bg-red-500/10"
                     }`}
                   >
                     {isSale ? (
-                      <ArrowUpRight className="h-4 w-4 text-emerald-400" aria-hidden />
+                      <ArrowUpRight className="h-4 w-4 text-green-400" aria-hidden />
                     ) : (
                       <ArrowDownRight className="h-4 w-4 text-red-400" aria-hidden />
                     )}
@@ -218,7 +223,7 @@ export default async function DashboardPage() {
                 </div>
                 <span
                   className={`shrink-0 text-sm font-semibold ${
-                    isSale ? "text-emerald-400" : "text-red-400"
+                    isSale ? "text-green-400" : "text-red-400"
                   }`}
                 >
                   {isSale ? "+" : "-"}
@@ -228,7 +233,7 @@ export default async function DashboardPage() {
             );
           })}
           {recentTransactions.length === 0 ? (
-            <Card className="text-sm text-muted-foreground">
+            <Card variant="secondary" className="text-sm text-muted-foreground">
               まだ売上・経費が登録されていません。
             </Card>
           ) : null}
@@ -251,7 +256,7 @@ export default async function DashboardPage() {
             ) : null}
           </Card>
         ) : (
-          <Card className="text-sm text-muted-foreground">
+          <Card variant="secondary" className="text-sm text-muted-foreground">
             進行中の目標はまだ設定されていません。
           </Card>
         )}

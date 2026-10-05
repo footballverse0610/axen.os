@@ -11,7 +11,7 @@ const GOAL_TYPE_OPTIONS: GoalType[] = ["revenue", "profit", "sales_count", "cust
 const initialState: GoalActionState = { error: null };
 
 const fieldClass =
-  "rounded-xl border border-border bg-surface-muted px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground/20";
+  "rounded-xl border border-border bg-surface-muted px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20";
 
 function today() {
   return new Date().toISOString().slice(0, 10);
@@ -288,7 +288,7 @@ export function GoalForm({
       <button
         type="submit"
         disabled={isPending}
-        className="mt-1 w-full rounded-xl bg-foreground py-2.5 text-sm font-semibold text-background transition-opacity hover:opacity-90 disabled:opacity-60"
+        className="mt-1 w-full rounded-xl bg-primary py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
       >
         {isPending ? "保存中…" : goal ? "変更を保存" : "目標を追加"}
       </button>

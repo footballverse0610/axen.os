@@ -1,18 +1,49 @@
 @import "tailwindcss";
 
 /*
- * Axen OS ブランドカラー
- * ベース: ブラック / ホワイト / ダークグレー（常時ダークテーマ）
- * アクセントカラーは今後のUI実装時に必要に応じて調整する
+ * 「起業しよ。」ブランドカラー / デザイントークン
+ *
+ * ライトテーマ(白〜薄いグレーをベースに、Primaryカラーを意味のある
+ * 場所にのみアクセントとして使う)。固定値を機械的に全画面へ塗るのではなく、
+ * 各コンポーネント側でUIの階層・重要度に応じて使用する。
+ *
+ * - background / surface / border / foreground系: 画面のベース(白〜グレー階調)
+ * - primary系: 主要CTA・選択中ナビゲーション・進捗・重要な数値・AI関連UI・フォーカス状態
+ * - success / warning / danger: 完了・達成・収入／注意／支出・エラー・削除 等の意味づけ
  */
 :root {
-  --background: #0a0a0a;
-  --foreground: #f5f5f5;
-  --surface: #141414;
-  --surface-muted: #1f1f1f;
-  --border: #2a2a2a;
-  --muted-foreground: #a1a1a1;
-  --accent: #f5f5f5;
+  --background: #f8f9fc;
+  --foreground: #111827;
+  --surface: #ffffff;
+  --surface-muted: #f1f2f6;
+  --border: #e5e7eb;
+  --muted-foreground: #6b7280;
+  --accent: #111827;
+
+  --primary: #635bff;
+  --primary-dark: #5147e8;
+  --brand-accent: #8b7cff;
+
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+
+  /* カードの「浮いている」より「整理されている」印象のための、非常に弱いshadow。 */
+  --shadow-card: 0 1px 2px 0 rgb(17 24 39 / 0.04), 0 1px 3px 0 rgb(17 24 39 / 0.04);
+  --shadow-card-primary: 0 1px 2px 0 rgb(99 91 255 / 0.06), 0 4px 12px -2px rgb(99 91 255 / 0.12);
+
+  /*
+   * Tailwindデフォルトパレットのうち、意味づけされた色(success/warning/danger)に
+   * 対応する"-400"(テキスト用の濃さ)のみを、白背景での可読性を確保した濃さへ
+   * 上書きする。"-500"(ボタンの塗り・バッジの縁取り等)は、デフォルト値が
+   * そのままDanger(#ef4444)/Warning(#f59e0b)/Success相当の緑(green-500 = #22c55e)と
+   * 一致するため上書き不要。
+   * (globals.cssのこのブロックは@layerに属さないため、Tailwind本体の
+   * @layer theme内のデフォルト定義より優先される)
+   */
+  --color-red-400: #dc2626;
+  --color-amber-400: #b45309;
+  --color-green-400: #15803d;
 }
 
 @theme inline {
@@ -23,6 +54,15 @@
   --color-border: var(--border);
   --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
+
+  --color-primary: var(--primary);
+  --color-primary-dark: var(--primary-dark);
+  --color-brand-accent: var(--brand-accent);
+
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -55,12 +95,25 @@ a,
   transition: transform 100ms ease-out;
 }
 
-@media (hover: none) {
-  button:not(:disabled):active,
-  a:active,
-  [role="button"]:not([aria-disabled="true"]):active {
-    transform: scale(0.97);
-  }
+button:not(:disabled):active,
+a:active,
+[role="button"]:not([aria-disabled="true"]):active {
+  transform: scale(0.97);
+}
+
+/*
+ * キーボード操作時のフォーカス可視化(マウス/タップ時には出ない
+ * :focus-visibleのみを使うため、既存のクリック操作の見た目には影響しない)。
+ * Primaryカラーで統一し、「フォーカス状態→Primary」の方針に合わせる。
+ */
+button:focus-visible,
+a:focus-visible,
+[role="button"]:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -68,5 +121,30 @@ a,
   a,
   [role="button"] {
     transition: none;
+  }
+}
+
+/*
+ * カード・リスト項目などの表示時に使う、非常に短いフェードイン。
+ * 操作の速度を犠牲にしないよう、150ms程度に留める。
+ */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 220ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in-up {
+    animation: none;
   }
 }

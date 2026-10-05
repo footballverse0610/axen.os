@@ -42,7 +42,7 @@ export function StartGuideResult({
 
       <div className="rounded-2xl border border-border bg-surface-muted/60 p-5">
         <div className="flex items-start gap-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-foreground/10">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10">
             <Sparkles className="h-4 w-4 text-foreground" aria-hidden />
           </div>
           <div className="flex-1">
@@ -109,8 +109,8 @@ function StartGuideStepCard({ index, step }: { index: number; step: StartGuideSt
               disabled={isPending || added}
               className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-semibold transition-colors disabled:cursor-not-allowed ${
                 added
-                  ? "border border-emerald-500/40 bg-emerald-500/10 text-emerald-400"
-                  : "bg-foreground text-background hover:opacity-90 disabled:opacity-60"
+                  ? "border border-green-500/40 bg-green-500/10 text-green-400"
+                  : "bg-primary text-white hover:opacity-90 disabled:opacity-60"
               }`}
             >
               {added ? (

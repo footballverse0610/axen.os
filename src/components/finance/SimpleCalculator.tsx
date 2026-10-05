@@ -205,7 +205,7 @@ export function SimpleCalculator({
         <button
           type="button"
           onClick={pressEquals}
-          className={`${operatorKeyClass} row-span-2 bg-foreground text-background hover:opacity-90`}
+          className={`${operatorKeyClass} row-span-2 bg-primary text-white hover:opacity-90`}
         >
           =
         </button>
@@ -221,7 +221,7 @@ export function SimpleCalculator({
       <button
         type="button"
         onClick={pressApply}
-        className="w-full rounded-lg bg-foreground py-2 text-sm font-semibold text-background transition-opacity hover:opacity-90"
+        className="w-full rounded-lg bg-primary py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
       >
         金額欄に反映
       </button>

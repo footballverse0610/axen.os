@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 const fieldClass =
-  "rounded-xl border border-border bg-surface-muted px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground/20";
+  "rounded-xl border border-border bg-surface-muted px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20";
 
 /**
  * 「自由入力+候補選択」のカテゴリー入力。
@@ -53,7 +53,7 @@ export function CategoryPicker({
               aria-pressed={isSelected}
               className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
                 isSelected
-                  ? "border-foreground bg-foreground text-background"
+                  ? "border-primary bg-primary text-white"
                   : "border-border bg-surface-muted text-muted-foreground hover:text-foreground"
               }`}
             >

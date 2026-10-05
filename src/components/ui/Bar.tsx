@@ -10,10 +10,10 @@ export function Bar({
   const percent = max <= 0 ? 0 : Math.min(100, Math.round((value / max) * 100));
   const fillClass =
     tone === "good"
-      ? "bg-emerald-400"
+      ? "bg-green-400"
       : tone === "critical"
         ? "bg-red-400"
-        : "bg-foreground";
+        : "bg-primary";
 
   return (
     <div

@@ -16,7 +16,7 @@ import type { Profile } from "@/lib/supabase/types";
 const initialState: NotificationActionState = { error: null };
 
 const fieldClass =
-  "rounded-xl border border-border bg-surface-muted px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground/20";
+  "rounded-xl border border-border bg-surface-muted px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20";
 
 /**
  * タスク/目標期限のローカル通知(Android)のON/OFF・通知時刻を設定するフォーム。
@@ -71,7 +71,7 @@ export function NotificationSettingsForm({ profile }: { profile: Profile | null 
             defaultChecked={profile?.notifications_enabled ?? false}
             className="peer sr-only"
           />
-          <div className="h-6 w-11 rounded-full bg-surface-muted transition-colors peer-checked:bg-foreground" />
+          <div className="h-6 w-11 rounded-full bg-surface-muted transition-colors peer-checked:bg-primary" />
           <div className="absolute left-1 h-4 w-4 rounded-full bg-background transition-transform peer-checked:translate-x-5" />
         </label>
       </div>
@@ -94,7 +94,7 @@ export function NotificationSettingsForm({ profile }: { profile: Profile | null 
           {state.error}
         </p>
       ) : null}
-      {state.success ? <p className="text-sm text-emerald-400">保存しました。</p> : null}
+      {state.success ? <p className="text-sm text-green-400">保存しました。</p> : null}
       {permissionDenied ? (
         <p className="text-sm text-amber-400">
           端末の通知が許可されていないため、通知は届きません。Androidの設定アプリから
@@ -105,7 +105,7 @@ export function NotificationSettingsForm({ profile }: { profile: Profile | null 
       <button
         type="submit"
         disabled={isPending}
-        className="mt-1 w-full rounded-xl bg-foreground py-2.5 text-sm font-semibold text-background transition-opacity hover:opacity-90 disabled:opacity-60 sm:w-auto sm:self-start sm:px-6"
+        className="mt-1 w-full rounded-xl bg-primary py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60 sm:w-auto sm:self-start sm:px-6"
       >
         {isPending ? "保存中…" : "通知設定を保存"}
       </button>

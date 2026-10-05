@@ -84,7 +84,7 @@ export function FinanceClient({ sales, expenses }: { sales: Sale[]; expenses: Ex
           <button
             type="button"
             onClick={() => setModal({ type: "create" })}
-            className="flex items-center gap-1.5 rounded-full bg-foreground px-3.5 py-2 text-xs font-semibold text-background transition-opacity hover:opacity-90"
+            className="flex items-center gap-1.5 rounded-full bg-primary px-3.5 py-2 text-xs font-semibold text-white transition-opacity hover:opacity-90"
           >
             <Plus className="h-3.5 w-3.5" aria-hidden />
             追加
@@ -144,11 +144,11 @@ export function FinanceClient({ sales, expenses }: { sales: Sale[]; expenses: Ex
                 <div className="flex min-w-0 items-center gap-3">
                   <div
                     className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
-                      isSale ? "bg-emerald-500/10" : "bg-red-500/10"
+                      isSale ? "bg-green-500/10" : "bg-red-500/10"
                     }`}
                   >
                     {isSale ? (
-                      <ArrowUpRight className="h-4 w-4 text-emerald-400" aria-hidden />
+                      <ArrowUpRight className="h-4 w-4 text-green-400" aria-hidden />
                     ) : (
                       <ArrowDownRight className="h-4 w-4 text-red-400" aria-hidden />
                     )}
@@ -165,7 +165,7 @@ export function FinanceClient({ sales, expenses }: { sales: Sale[]; expenses: Ex
                 <div className="flex shrink-0 items-center gap-2">
                   <span
                     className={`text-sm font-semibold ${
-                      isSale ? "text-emerald-400" : "text-red-400"
+                      isSale ? "text-green-400" : "text-red-400"
                     }`}
                   >
                     {isSale ? "+" : "-"}
@@ -207,7 +207,7 @@ export function FinanceClient({ sales, expenses }: { sales: Sale[]; expenses: Ex
               <button
                 type="button"
                 onClick={() => setModal({ type: "create" })}
-                className="mt-2 flex items-center gap-1.5 rounded-full bg-foreground px-4 py-2 text-xs font-semibold text-background transition-opacity hover:opacity-90"
+                className="mt-2 flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-semibold text-white transition-opacity hover:opacity-90"
               >
                 <Plus className="h-3.5 w-3.5" aria-hidden />
                 取引を追加

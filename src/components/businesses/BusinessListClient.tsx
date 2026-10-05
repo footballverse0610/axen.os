@@ -101,7 +101,7 @@ export function BusinessListClient({
             <button
               type="button"
               onClick={() => setShowDeleteModal(true)}
-              className="text-sm font-medium text-red-400 transition-colors hover:text-red-300"
+              className="text-sm font-medium text-red-400 transition-colors hover:text-red-500"
             >
               この事業を削除する
             </button>
@@ -150,7 +150,7 @@ export function BusinessListClient({
               key={business.id}
               className={`flex items-center gap-1 rounded-2xl border pr-2 transition-colors ${
                 isCurrent
-                  ? "border-foreground/30 bg-surface-muted"
+                  ? "border-primary/30 bg-surface-muted"
                   : "border-border bg-surface"
               }`}
             >
@@ -198,7 +198,7 @@ export function BusinessListClient({
       <button
         type="button"
         onClick={() => setView("create")}
-        className="flex w-full items-center justify-center gap-1.5 rounded-2xl border border-dashed border-border py-4 text-sm font-medium text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground"
+        className="flex w-full items-center justify-center gap-1.5 rounded-2xl border border-dashed border-border py-4 text-sm font-medium text-muted-foreground transition-colors hover:border-primary/30 hover:text-foreground"
       >
         <Plus className="h-4 w-4" aria-hidden />
         新しい事業を追加

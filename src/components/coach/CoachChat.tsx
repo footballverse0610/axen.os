@@ -97,8 +97,8 @@ export function CoachChat({ initialMessages, initialInput }: CoachChatProps) {
   return (
     <div className="flex flex-col gap-5">
       <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-foreground/10">
-          <Sparkles className="h-5 w-5 text-foreground" aria-hidden />
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-brand-accent shadow-[var(--shadow-card-primary)]">
+          <Sparkles className="h-5 w-5 text-white" aria-hidden />
         </div>
         <div>
           <p className="text-sm font-semibold text-foreground">AI Business Coach</p>
@@ -126,11 +126,11 @@ export function CoachChat({ initialMessages, initialInput }: CoachChatProps) {
                 className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-4 py-3 text-sm leading-relaxed sm:max-w-[70%] ${
                   isCoach
                     ? "rounded-tl-sm border border-border bg-surface text-foreground"
-                    : "rounded-tr-sm bg-foreground text-background"
+                    : "rounded-tr-sm bg-primary text-white"
                 }`}
               >
                 {isEmptyPending ? (
-                  <span className="inline-flex items-center gap-1 text-muted-foreground">
+                  <span className="inline-flex items-center gap-1 text-primary/70">
                     <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-current" />
                     <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-current [animation-delay:150ms]" />
                     <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-current [animation-delay:300ms]" />
@@ -158,7 +158,7 @@ export function CoachChat({ initialMessages, initialInput }: CoachChatProps) {
             type="button"
             disabled={isSending}
             onClick={() => setInput(prompt)}
-            className="rounded-full border border-border bg-surface px-3 py-1.5 text-xs text-muted-foreground transition hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
+            className="rounded-full border border-border bg-surface px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:border-primary/30 hover:text-primary disabled:cursor-not-allowed disabled:opacity-60"
           >
             {prompt}
           </button>
@@ -167,7 +167,7 @@ export function CoachChat({ initialMessages, initialInput }: CoachChatProps) {
 
       <form
         onSubmit={handleSubmit}
-        className="sticky bottom-20 mt-2 flex items-center gap-2 rounded-full border border-border bg-surface px-4 py-2.5 md:bottom-4"
+        className="sticky bottom-20 mt-2 flex items-center gap-2 rounded-full border border-border bg-surface px-4 py-2.5 transition-colors focus-within:border-primary/40 md:bottom-4"
       >
         <input
           type="text"
@@ -181,7 +181,7 @@ export function CoachChat({ initialMessages, initialInput }: CoachChatProps) {
           type="submit"
           disabled={isSending || input.trim().length === 0}
           aria-label="送信"
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-foreground text-background disabled:cursor-not-allowed disabled:bg-surface-muted disabled:text-muted-foreground"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-white disabled:cursor-not-allowed disabled:bg-surface-muted disabled:text-muted-foreground"
         >
           <Send className="h-4 w-4" aria-hidden />
         </button>

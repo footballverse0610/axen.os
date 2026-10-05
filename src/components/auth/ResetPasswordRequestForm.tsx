@@ -14,8 +14,8 @@ export function ResetPasswordRequestForm({
 
   if (state.success) {
     return (
-      <div className="flex flex-col items-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-4 text-center">
-        <p className="text-sm leading-relaxed text-emerald-400">{state.success}</p>
+      <div className="flex flex-col items-center gap-2 rounded-xl border border-green-500/20 bg-green-500/10 px-4 py-4 text-center">
+        <p className="text-sm leading-relaxed text-green-400">{state.success}</p>
       </div>
     );
   }
@@ -38,7 +38,7 @@ export function ResetPasswordRequestForm({
           type="email"
           autoComplete="email"
           required
-          className="rounded-xl border border-border bg-surface-muted px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground/20"
+          className="rounded-xl border border-border bg-surface-muted px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
           placeholder="you@example.com"
         />
       </div>
@@ -52,7 +52,7 @@ export function ResetPasswordRequestForm({
       <button
         type="submit"
         disabled={isPending}
-        className="mt-2 w-full rounded-xl bg-foreground py-2.5 text-sm font-semibold text-background transition-opacity hover:opacity-90 disabled:opacity-60"
+        className="mt-2 w-full rounded-xl bg-primary py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
       >
         {isPending ? "送信中…" : "再設定メールを送信"}
       </button>
