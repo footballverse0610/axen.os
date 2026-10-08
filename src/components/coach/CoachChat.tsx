@@ -3,6 +3,14 @@
 import { useRef, useState, type FormEvent } from "react";
 import { Send, Sparkles } from "lucide-react";
 import { suggestedPrompts } from "@/lib/mock-data";
+import { ActionSuggestions } from "@/components/coach/ActionSuggestions";
+import {
+  computeStreamingDisplayText,
+  EMPTY_COACH_ACTIONS,
+  sanitizeCoachActions,
+  splitCoachStreamText,
+  type CoachActions,
+} from "@/lib/coach/actions-schema";
 import type { CoachMessage } from "@/lib/supabase/types";
 
 /** stateを持つ側でのみ使う型。propsを増やしすぎないよう最小限にする。 */
@@ -16,6 +24,8 @@ interface ChatMessage {
   id: string;
   role: "user" | "coach";
   content: string;
+  /** coachロールのみ。ストリーミング完了後に末尾のマーカーから解析する(履歴の過去メッセージには付かない)。 */
+  actions?: CoachActions;
 }
 
 function toChatMessage(message: CoachMessage): ChatMessage {
@@ -69,18 +79,36 @@ export function CoachChat({ initialMessages, initialInput }: CoachChatProps) {
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
+      // 行動提案のマーカー以降は生テキストのまま画面に出さないよう、
+      // 受信した全文(raw)と、実際に表示する文字列(displayText)を分けて持つ。
+      let raw = "";
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        const chunk = decoder.decode(value, { stream: true });
+        raw += decoder.decode(value, { stream: true });
+        // ストリーミング中はcomputeStreamingDisplayTextを使う。マーカーが複数の
+        // チャンクに分割されて届いても、「マーカーかもしれない末尾」だけを
+        // 一時的に保留し、通常の会話テキストの表示を欠落させない。
+        const displayText = computeStreamingDisplayText(raw);
         setMessages((prev) =>
-          prev.map((m) =>
-            m.id === coachMessageId ? { ...m, content: m.content + chunk } : m,
-          ),
+          prev.map((m) => (m.id === coachMessageId ? { ...m, content: displayText } : m)),
         );
         scrollAnchorRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
       }
+
+      const { displayText, actionsJson } = splitCoachStreamText(raw);
+      let actions: CoachActions = EMPTY_COACH_ACTIONS;
+      if (actionsJson) {
+        try {
+          actions = sanitizeCoachActions(JSON.parse(actionsJson));
+        } catch {
+          // 解析できない場合はボタンを出さないだけで、通常の会話表示は維持する
+        }
+      }
+      setMessages((prev) =>
+        prev.map((m) => (m.id === coachMessageId ? { ...m, content: displayText, actions } : m)),
+      );
     } catch {
       setErrorMessage("通信エラーが発生しました。もう一度お試しください。");
       setMessages((prev) => prev.filter((m) => m.id !== coachMessageId));
@@ -120,7 +148,7 @@ export function CoachChat({ initialMessages, initialInput }: CoachChatProps) {
           return (
             <div
               key={message.id}
-              className={`flex ${isCoach ? "justify-start" : "justify-end"}`}
+              className={`flex flex-col ${isCoach ? "items-start" : "items-end"}`}
             >
               <div
                 className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-4 py-3 text-sm leading-relaxed sm:max-w-[70%] ${
@@ -139,6 +167,11 @@ export function CoachChat({ initialMessages, initialInput }: CoachChatProps) {
                   message.content
                 )}
               </div>
+              {isCoach && message.actions ? (
+                <div className="max-w-[85%] sm:max-w-[70%]">
+                  <ActionSuggestions actions={message.actions} />
+                </div>
+              ) : null}
             </div>
           );
         })}

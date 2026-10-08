@@ -16,12 +16,20 @@ const initialState: IdeaActionState = { error: null };
 const fieldClass =
   "rounded-xl border border-border bg-surface-muted px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20";
 
+export interface IdeaFormInitialValues {
+  title?: string;
+  description?: string;
+}
+
 export function IdeaForm({
   idea,
   onDone,
+  initialValues,
 }: {
   idea?: BusinessIdea;
   onDone: () => void;
+  /** 作成モード(idea未指定)でのみ使う初期値。AIコーチの提案などからの遷移で使う。 */
+  initialValues?: IdeaFormInitialValues;
 }) {
   const action = idea ? updateIdea : createIdea;
   const [state, formAction, isPending] = useActionState(action, initialState);
@@ -46,7 +54,7 @@ export function IdeaForm({
           type="text"
           required
           maxLength={100}
-          defaultValue={idea?.title}
+          defaultValue={idea?.title ?? initialValues?.title}
           className={fieldClass}
           placeholder="例：サブスク型パーソナル栄養コーチ"
         />
@@ -61,7 +69,7 @@ export function IdeaForm({
           name="description"
           rows={3}
           maxLength={500}
-          defaultValue={idea?.description ?? ""}
+          defaultValue={idea?.description ?? initialValues?.description ?? ""}
           className={fieldClass}
           placeholder="どんなアイデアか一言で"
         />

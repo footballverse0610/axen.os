@@ -19,9 +19,11 @@ function today() {
 
 export interface GoalFormInitialValues {
   title?: string;
+  description?: string;
   goalType?: GoalType;
   unit?: string;
   targetValue?: number;
+  targetDate?: string;
 }
 
 export function GoalForm({
@@ -110,7 +112,7 @@ export function GoalForm({
           name="description"
           rows={2}
           maxLength={500}
-          defaultValue={goal?.description ?? ""}
+          defaultValue={goal?.description ?? initialValues?.description ?? ""}
           className={fieldClass}
         />
       </div>
@@ -267,7 +269,7 @@ export function GoalForm({
             id="targetDate"
             name="targetDate"
             type="date"
-            defaultValue={goal?.target_date ?? ""}
+            defaultValue={goal?.target_date ?? initialValues?.targetDate ?? ""}
             className={fieldClass}
           />
         </div>

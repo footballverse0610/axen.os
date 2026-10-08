@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { buildCoachSystemPrompt } from "@/lib/anthropic/system-prompt";
+import { splitCoachStreamText } from "@/lib/coach/actions-schema";
 import { streamCoachReply } from "@/lib/coach/provider";
 import { getCurrentUser } from "@/lib/supabase/get-current-user";
 import { getCurrentBusiness } from "@/lib/supabase/business";
@@ -130,12 +131,16 @@ export async function POST(request: Request) {
           controller.enqueue(encoder.encode(chunk));
         }
 
-        if (fullText.trim().length > 0) {
+        // DBに保存するのは表示用メッセージ本文のみ。行動提案の構造化データ
+        // (COACH_ACTIONS_MARKER以降)は会話履歴として永続化しない(履歴から
+        // 再読込した過去メッセージには、ワンタップ追加ボタンは出さない設計)。
+        const { displayText } = splitCoachStreamText(fullText);
+        if (displayText.trim().length > 0) {
           await insertCoachMessage({
             businessId: business.id,
             userId: user.id,
             role: "coach",
-            content: fullText,
+            content: displayText,
           });
         }
       } catch (err) {

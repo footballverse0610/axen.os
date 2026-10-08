@@ -3,6 +3,12 @@ import { getAnthropicClient, COACH_MODEL } from "../anthropic/client";
 import type { CoachContext } from "../supabase/coach-context";
 import { isCoachMockModeEnabled } from "./mock-mode";
 import { streamMockCoachReply } from "./mock-provider";
+import {
+  COACH_ACTIONS_MARKER,
+  PROPOSE_ACTIONS_TOOL,
+  hasAnyCoachActions,
+  sanitizeCoachActions,
+} from "./actions-schema";
 
 export interface CoachConversationMessage {
   role: "user" | "assistant";
@@ -31,9 +37,12 @@ export async function* streamCoachReply(params: {
   const client = getAnthropicClient();
   const claudeStream = client.messages.stream({
     model: COACH_MODEL,
-    max_tokens: 2048,
+    // propose_actionsツール呼び出し分の出力トークンも必要なため、通常の
+    // 会話テキストのみだった頃より少し余裕を持たせる。
+    max_tokens: 3072,
     system: params.systemPrompt,
     messages: params.messages,
+    tools: [PROPOSE_ACTIONS_TOOL],
   });
 
   for await (const event of claudeStream) {
@@ -42,5 +51,16 @@ export async function* streamCoachReply(params: {
     }
   }
 
-  await claudeStream.finalMessage();
+  const finalMessage = await claudeStream.finalMessage();
+  const toolUseBlock = finalMessage.content.find(
+    (block) => block.type === "tool_use" && block.name === "propose_actions",
+  );
+  if (toolUseBlock && toolUseBlock.type === "tool_use") {
+    const actions = sanitizeCoachActions(toolUseBlock.input);
+    if (hasAnyCoachActions(actions)) {
+      // 会話テキストの後ろに、既存のプレーンテキストストリームの延長として
+      // マーカー+JSONを1チャンクだけ追加する(新しいレスポンス形式は導入しない)。
+      yield `${COACH_ACTIONS_MARKER}${JSON.stringify(actions)}`;
+    }
+  }
 }

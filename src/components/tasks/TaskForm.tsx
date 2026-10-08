@@ -17,7 +17,22 @@ const initialState: TaskActionState = { error: null };
 const fieldClass =
   "rounded-xl border border-border bg-surface-muted px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20";
 
-export function TaskForm({ task, onDone }: { task?: Task; onDone: () => void }) {
+export interface TaskFormInitialValues {
+  title?: string;
+  description?: string;
+  dueDate?: string;
+}
+
+export function TaskForm({
+  task,
+  onDone,
+  initialValues,
+}: {
+  task?: Task;
+  onDone: () => void;
+  /** 作成モード(task未指定)でのみ使う初期値。AIコーチの提案などからの遷移で使う。 */
+  initialValues?: TaskFormInitialValues;
+}) {
   const action = task ? updateTask : createTask;
   const [state, formAction, isPending] = useActionState(action, initialState);
 
@@ -41,7 +56,7 @@ export function TaskForm({ task, onDone }: { task?: Task; onDone: () => void }) 
           type="text"
           required
           maxLength={100}
-          defaultValue={task?.title}
+          defaultValue={task?.title ?? initialValues?.title}
           className={fieldClass}
           placeholder="例：競合3社の価格リサーチ"
         />
@@ -56,7 +71,7 @@ export function TaskForm({ task, onDone }: { task?: Task; onDone: () => void }) 
           name="description"
           rows={3}
           maxLength={500}
-          defaultValue={task?.description ?? ""}
+          defaultValue={task?.description ?? initialValues?.description ?? ""}
           className={fieldClass}
           placeholder="詳細があれば"
         />
@@ -101,7 +116,7 @@ export function TaskForm({ task, onDone }: { task?: Task; onDone: () => void }) 
           id="dueDate"
           name="dueDate"
           type="date"
-          defaultValue={task?.due_date ?? ""}
+          defaultValue={task?.due_date ?? initialValues?.dueDate ?? ""}
           className={fieldClass}
         />
       </div>
