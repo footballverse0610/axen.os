@@ -38,11 +38,7 @@ export function ActionSuggestions({ actions }: { actions: CoachActions }) {
 
   return (
     <div className="mt-2 flex flex-wrap gap-2">
-      {actions.tasks.length === 1 ? (
-        <SingleTaskButton task={actions.tasks[0]} />
-      ) : actions.tasks.length > 1 ? (
-        <BulkTasksButton tasks={actions.tasks} />
-      ) : null}
+      {actions.tasks.length > 0 ? <TaskSuggestions tasks={actions.tasks} /> : null}
       {actions.goals.map((goal, index) => (
         <SingleGoalButton key={index} goal={goal} />
       ))}
@@ -53,68 +49,42 @@ export function ActionSuggestions({ actions }: { actions: CoachActions }) {
   );
 }
 
-function SingleTaskButton({ task }: { task: CoachSuggestedTask }) {
-  const [open, setOpen] = useState(false);
-  const [done, setDone] = useState(false);
+type TaskSuggestionsModal = { type: "single"; index: number } | { type: "bulk" } | null;
 
-  return (
-    <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        disabled={done}
-        className={`${primaryPillClass} ${done ? doneClass : primaryDefaultClass}`}
-      >
-        {done ? (
-          <>
-            <Check className="h-3.5 w-3.5" aria-hidden />
-            タスクに追加しました
-          </>
-        ) : (
-          <>
-            <Plus className="h-3.5 w-3.5" aria-hidden />
-            タスクに追加
-          </>
-        )}
-      </button>
+/**
+ * 複数のタスク提案を、個別追加・一括追加の両方で扱うコンポーネント。
+ *
+ * タスクごとの追加済み状態(statuses)を1つの配列で共有管理することで、
+ * 「個別で1件追加済みのタスクを、後から一括追加で再度登録してしまう」
+ * といった重複登録を構造的に防ぐ(どちらの経路で追加しても、同じ
+ * statuses配列が更新される)。
+ *
+ * モーダルはsingle/bulkのどちらか一方のみを1つのstateで管理する
+ * (既存のTasksClient等と同じ、同時に複数モーダルを開かせない設計)。
+ */
+function TaskSuggestions({ tasks }: { tasks: CoachSuggestedTask[] }) {
+  const [statuses, setStatuses] = useState<("idle" | "done")[]>(() => tasks.map(() => "idle"));
+  const [modal, setModal] = useState<TaskSuggestionsModal>(null);
+  const [bulkSubmitting, setBulkSubmitting] = useState(false);
+  const [bulkError, setBulkError] = useState<string | null>(null);
 
-      {open ? (
-        <Modal title="タスクを追加" onClose={() => setOpen(false)}>
-          <TaskForm
-            initialValues={{
-              title: task.title,
-              description: task.description ?? undefined,
-              dueDate: task.dueDate ?? undefined,
-            }}
-            onDone={() => {
-              setOpen(false);
-              setDone(true);
-            }}
-          />
-        </Modal>
-      ) : null}
-    </>
-  );
-}
+  function markDone(index: number) {
+    setStatuses((prev) => prev.map((status, i) => (i === index ? "done" : status)));
+  }
 
-function BulkTasksButton({ tasks }: { tasks: CoachSuggestedTask[] }) {
-  const [open, setOpen] = useState(false);
-  const [done, setDone] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  // 登録に成功したタスクの件数(先頭からtasks[0..completedCount-1]が成功済み)。
-  // 一部失敗した後の再試行は、ここから再開する(成功済み分は作り直さない)。
-  const [completedCount, setCompletedCount] = useState(0);
-  const [error, setError] = useState<string | null>(null);
+  // 個別追加で既に完了したタスクは、一括追加の対象から自動的に除外される。
+  const pendingIndexes = statuses
+    .map((status, index) => ({ status, index }))
+    .filter(({ status }) => status !== "done")
+    .map(({ index }) => index);
 
-  const remainingCount = tasks.length - completedCount;
+  async function handleBulkConfirm() {
+    if (bulkSubmitting) return;
+    setBulkSubmitting(true);
+    setBulkError(null);
 
-  async function handleConfirm() {
-    if (isSubmitting || completedCount >= tasks.length) return;
-    setIsSubmitting(true);
-    setError(null);
-
-    for (let i = completedCount; i < tasks.length; i++) {
-      const task = tasks[i];
+    for (const index of pendingIndexes) {
+      const task = tasks[index];
       const formData = new FormData();
       formData.set("title", task.title);
       formData.set("description", task.description ?? "");
@@ -126,99 +96,120 @@ function BulkTasksButton({ tasks }: { tasks: CoachSuggestedTask[] }) {
       try {
         result = await createTask({ error: null }, formData);
       } catch {
-        // Server Actionが例外を投げた場合は成功とみなさない(completedCountを進めない)。
-        setError(
-          `タスクの追加に失敗しました。${i}件は追加済みです(残り${tasks.length - i}件)。時間をおいて再度お試しください。`,
-        );
-        setIsSubmitting(false);
+        // Server Actionが例外を投げた場合は成功とみなさない(statusesを進めない)。
+        setBulkError("タスクの追加に失敗しました。時間をおいて再度お試しください。");
+        setBulkSubmitting(false);
         return;
       }
 
       // 戻り値が成功を示した場合のみ、そのタスクを成功済みとして扱う。
       if (result.error) {
-        setError(`${result.error}(${i}件は追加済みです。残り${tasks.length - i}件)`);
-        setCompletedCount(i);
-        setIsSubmitting(false);
+        setBulkError(result.error);
+        setBulkSubmitting(false);
         return;
       }
-      setCompletedCount(i + 1);
+      markDone(index);
     }
 
-    setIsSubmitting(false);
-    setDone(true);
-    setOpen(false);
+    setBulkSubmitting(false);
+    setModal(null);
   }
 
-  const remainingTasks = tasks.slice(completedCount);
+  const bulkTargetIndexes = modal?.type === "bulk" ? pendingIndexes : [];
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        disabled={done}
-        className={`${primaryPillClass} ${done ? doneClass : primaryDefaultClass}`}
-      >
-        {done ? (
-          <>
-            <Check className="h-3.5 w-3.5" aria-hidden />
-            {tasks.length}件追加しました
-          </>
-        ) : completedCount > 0 ? (
-          <>🚀 残り{remainingCount}件をタスクに追加</>
-        ) : (
-          <>🚀 {tasks.length}件まとめてタスクに追加</>
-        )}
-      </button>
+      {tasks.map((task, index) => {
+        const isDone = statuses[index] === "done";
+        return (
+          <button
+            key={index}
+            type="button"
+            onClick={() => setModal({ type: "single", index })}
+            disabled={isDone || bulkSubmitting}
+            className={`${primaryPillClass} ${isDone ? doneClass : primaryDefaultClass}`}
+          >
+            {isDone ? (
+              <>
+                <Check className="h-3.5 w-3.5" aria-hidden />
+                追加済み
+              </>
+            ) : (
+              <>
+                <Plus className="h-3.5 w-3.5" aria-hidden />
+                このタスクを追加
+              </>
+            )}
+          </button>
+        );
+      })}
 
-      {open ? (
-        <Modal
-          title={
-            completedCount > 0
-              ? `残り${remainingCount}件のタスクを追加`
-              : `${tasks.length}件のタスクを追加`
-          }
-          onClose={() => setOpen(false)}
+      {/* 未追加が2件以上残っている場合のみ、まとめて追加ボタンを表示する。 */}
+      {pendingIndexes.length > 1 ? (
+        <button
+          type="button"
+          onClick={() => setModal({ type: "bulk" })}
+          disabled={bulkSubmitting}
+          className={`${primaryPillClass} ${secondaryDefaultClass}`}
         >
-          <div className="flex flex-col gap-3">
-            {completedCount > 0 ? (
-              <p className="text-xs text-muted-foreground">
-                すでに{completedCount}件追加済みです。残り{remainingCount}件を追加します。
-              </p>
-            ) : null}
+          🚀 残り{pendingIndexes.length}件をまとめて追加
+        </button>
+      ) : null}
 
+      {modal?.type === "single" ? (
+        <Modal title="タスクを追加" onClose={() => setModal(null)}>
+          <TaskForm
+            initialValues={{
+              title: tasks[modal.index].title,
+              description: tasks[modal.index].description ?? undefined,
+              dueDate: tasks[modal.index].dueDate ?? undefined,
+            }}
+            onDone={() => {
+              markDone(modal.index);
+              setModal(null);
+            }}
+          />
+        </Modal>
+      ) : null}
+
+      {modal?.type === "bulk" ? (
+        <Modal title={`${bulkTargetIndexes.length}件のタスクを追加`} onClose={() => setModal(null)}>
+          <div className="flex flex-col gap-3">
             <ul className="flex flex-col gap-2">
-              {remainingTasks.map((task, index) => (
-                <li
-                  key={completedCount + index}
-                  className="rounded-xl border border-border bg-surface-muted px-3.5 py-3"
-                >
-                  <p className="text-sm font-medium text-foreground">{task.title}</p>
-                  {task.description ? (
-                    <p className="mt-0.5 text-xs text-muted-foreground">{task.description}</p>
-                  ) : null}
-                  {task.dueDate ? (
-                    <p className="mt-1 text-[11px] text-muted-foreground">
-                      期限: {task.dueDate}
-                    </p>
-                  ) : null}
-                </li>
-              ))}
+              {bulkTargetIndexes.map((index) => {
+                const task = tasks[index];
+                return (
+                  <li
+                    key={index}
+                    className="rounded-xl border border-border bg-surface-muted px-3.5 py-3"
+                  >
+                    <p className="text-sm font-medium text-foreground">{task.title}</p>
+                    {task.description ? (
+                      <p className="mt-0.5 text-xs text-muted-foreground">{task.description}</p>
+                    ) : null}
+                    {task.dueDate ? (
+                      <p className="mt-1 text-[11px] text-muted-foreground">
+                        期限: {task.dueDate}
+                      </p>
+                    ) : null}
+                  </li>
+                );
+              })}
             </ul>
 
-            {error ? (
+            {bulkError ? (
               <p role="alert" className="text-sm text-red-400">
-                {error}
+                {bulkError}
               </p>
             ) : null}
 
             <button
               type="button"
-              onClick={handleConfirm}
-              disabled={isSubmitting}
+              onClick={handleBulkConfirm}
+              disabled={bulkSubmitting}
               className="mt-1 w-full rounded-xl bg-primary py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
             >
-              {isSubmitting ? "追加中…" : `この${remainingCount}件を追加する`}
+              {bulkSubmitting ? "追加中…" : `この${bulkTargetIndexes.length}件を追加する`}
             </button>
           </div>
         </Modal>
