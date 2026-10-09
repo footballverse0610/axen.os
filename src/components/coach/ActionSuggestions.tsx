@@ -20,6 +20,8 @@ const primaryDefaultClass = "bg-primary text-white hover:opacity-90 disabled:opa
 const secondaryDefaultClass =
   "border border-border bg-surface-muted text-foreground hover:bg-surface disabled:opacity-60";
 const doneClass = "border border-green-500/40 bg-green-500/10 text-green-400";
+const suggestionCardClass = "rounded-xl border border-border bg-surface-muted px-3.5 py-3";
+const circledNumbers = ["①", "②", "③", "④", "⑤", "⑥", "⑦", "⑧", "⑨", "⑩"];
 
 /**
  * AIコーチの回答に付く「ワンタップ追加」ボタン群。
@@ -36,13 +38,11 @@ export function ActionSuggestions({ actions }: { actions: CoachActions }) {
     actions.tasks.length > 0 || actions.goals.length > 0 || actions.ideas.length > 0;
   if (!hasContent) return null;
 
-  const hasPillActions = actions.tasks.length > 0 || actions.goals.length > 0;
-
   return (
     <div className="mt-2 flex flex-col gap-3">
-      {hasPillActions ? (
+      {actions.tasks.length > 0 ? <TaskSuggestions tasks={actions.tasks} /> : null}
+      {actions.goals.length > 0 ? (
         <div className="flex flex-wrap gap-2">
-          {actions.tasks.length > 0 ? <TaskSuggestions tasks={actions.tasks} /> : null}
           {actions.goals.map((goal, index) => (
             <SingleGoalButton key={index} goal={goal} />
           ))}
@@ -122,29 +122,43 @@ function TaskSuggestions({ tasks }: { tasks: CoachSuggestedTask[] }) {
   const bulkTargetIndexes = modal?.type === "bulk" ? pendingIndexes : [];
 
   return (
-    <>
+    <div className="flex flex-col gap-2">
       {tasks.map((task, index) => {
         const isDone = statuses[index] === "done";
         return (
-          <button
-            key={index}
-            type="button"
-            onClick={() => setModal({ type: "single", index })}
-            disabled={isDone || bulkSubmitting}
-            className={`${primaryPillClass} ${isDone ? doneClass : primaryDefaultClass}`}
-          >
-            {isDone ? (
-              <>
-                <Check className="h-3.5 w-3.5" aria-hidden />
-                追加済み
-              </>
-            ) : (
-              <>
-                <Plus className="h-3.5 w-3.5" aria-hidden />
-                このタスクを追加
-              </>
-            )}
-          </button>
+          <div key={index} className={suggestionCardClass}>
+            {tasks.length > 1 ? (
+              <p className="text-[11px] font-medium text-muted-foreground">
+                タスク{circledNumbers[index] ?? `(${index + 1})`}
+              </p>
+            ) : null}
+            <p className="mt-0.5 text-sm font-semibold text-foreground">{task.title}</p>
+            {task.description ? (
+              <p className="mt-1 text-xs text-muted-foreground">{task.description}</p>
+            ) : null}
+            {task.dueDate ? (
+              <p className="mt-1 text-[11px] text-muted-foreground">期限: {task.dueDate}</p>
+            ) : null}
+
+            <button
+              type="button"
+              onClick={() => setModal({ type: "single", index })}
+              disabled={isDone || bulkSubmitting}
+              className={`${primaryPillClass} mt-2.5 ${isDone ? doneClass : primaryDefaultClass}`}
+            >
+              {isDone ? (
+                <>
+                  <Check className="h-3.5 w-3.5" aria-hidden />
+                  追加済み
+                </>
+              ) : (
+                <>
+                  <Plus className="h-3.5 w-3.5" aria-hidden />
+                  このタスクを追加
+                </>
+              )}
+            </button>
+          </div>
         );
       })}
 
@@ -154,7 +168,7 @@ function TaskSuggestions({ tasks }: { tasks: CoachSuggestedTask[] }) {
           type="button"
           onClick={() => setModal({ type: "bulk" })}
           disabled={bulkSubmitting}
-          className={`${primaryPillClass} ${secondaryDefaultClass}`}
+          className={`${primaryPillClass} ${secondaryDefaultClass} self-start`}
         >
           🚀 残り{pendingIndexes.length}件をまとめて追加
         </button>
@@ -183,10 +197,7 @@ function TaskSuggestions({ tasks }: { tasks: CoachSuggestedTask[] }) {
               {bulkTargetIndexes.map((index) => {
                 const task = tasks[index];
                 return (
-                  <li
-                    key={index}
-                    className="rounded-xl border border-border bg-surface-muted px-3.5 py-3"
-                  >
+                  <li key={index} className={suggestionCardClass}>
                     <p className="text-sm font-medium text-foreground">{task.title}</p>
                     {task.description ? (
                       <p className="mt-0.5 text-xs text-muted-foreground">{task.description}</p>
@@ -218,7 +229,7 @@ function TaskSuggestions({ tasks }: { tasks: CoachSuggestedTask[] }) {
           </div>
         </Modal>
       ) : null}
-    </>
+    </div>
   );
 }
 
@@ -266,8 +277,6 @@ function SingleGoalButton({ goal }: { goal: CoachSuggestedGoal }) {
   );
 }
 
-const circledNumbers = ["①", "②", "③", "④", "⑤", "⑥", "⑦", "⑧", "⑨", "⑩"];
-
 /**
  * 複数のアイデア提案を、カードごとに「タイトル・説明・保存ボタン」をまとめて
  * 表示するコンポーネント。どのボタンがどのアイデアに対応するかが一目で
@@ -301,7 +310,7 @@ function IdeaSuggestionCard({
   const [done, setDone] = useState(false);
 
   return (
-    <div className="rounded-xl border border-border bg-surface-muted px-3.5 py-3">
+    <div className={suggestionCardClass}>
       {total > 1 ? (
         <p className="text-[11px] font-medium text-muted-foreground">
           アイデア{circledNumbers[index] ?? `(${index + 1})`}
