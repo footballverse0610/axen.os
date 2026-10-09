@@ -36,15 +36,19 @@ export function ActionSuggestions({ actions }: { actions: CoachActions }) {
     actions.tasks.length > 0 || actions.goals.length > 0 || actions.ideas.length > 0;
   if (!hasContent) return null;
 
+  const hasPillActions = actions.tasks.length > 0 || actions.goals.length > 0;
+
   return (
-    <div className="mt-2 flex flex-wrap gap-2">
-      {actions.tasks.length > 0 ? <TaskSuggestions tasks={actions.tasks} /> : null}
-      {actions.goals.map((goal, index) => (
-        <SingleGoalButton key={index} goal={goal} />
-      ))}
-      {actions.ideas.map((idea, index) => (
-        <SingleIdeaButton key={index} idea={idea} />
-      ))}
+    <div className="mt-2 flex flex-col gap-3">
+      {hasPillActions ? (
+        <div className="flex flex-wrap gap-2">
+          {actions.tasks.length > 0 ? <TaskSuggestions tasks={actions.tasks} /> : null}
+          {actions.goals.map((goal, index) => (
+            <SingleGoalButton key={index} goal={goal} />
+          ))}
+        </div>
+      ) : null}
+      {actions.ideas.length > 0 ? <IdeaSuggestions ideas={actions.ideas} /> : null}
     </div>
   );
 }
@@ -262,25 +266,65 @@ function SingleGoalButton({ goal }: { goal: CoachSuggestedGoal }) {
   );
 }
 
-function SingleIdeaButton({ idea }: { idea: CoachSuggestedIdea }) {
+const circledNumbers = ["①", "②", "③", "④", "⑤", "⑥", "⑦", "⑧", "⑨", "⑩"];
+
+/**
+ * 複数のアイデア提案を、カードごとに「タイトル・説明・保存ボタン」をまとめて
+ * 表示するコンポーネント。どのボタンがどのアイデアに対応するかが一目で
+ * 分かるようにする(タイトルのみのボタンが並ぶと対応関係が分かりにくい、
+ * という指摘への対応)。
+ *
+ * 各カードはidea配列のインデックスに閉じたローカルstate(open/done)を
+ * 持つだけなので、保存の成否・処理中表示は常にそのアイデア自身にのみ反映され、
+ * 他のカードに影響しない。
+ */
+function IdeaSuggestions({ ideas }: { ideas: CoachSuggestedIdea[] }) {
+  return (
+    <div className="flex flex-col gap-2">
+      {ideas.map((idea, index) => (
+        <IdeaSuggestionCard key={index} idea={idea} index={index} total={ideas.length} />
+      ))}
+    </div>
+  );
+}
+
+function IdeaSuggestionCard({
+  idea,
+  index,
+  total,
+}: {
+  idea: CoachSuggestedIdea;
+  index: number;
+  total: number;
+}) {
   const [open, setOpen] = useState(false);
   const [done, setDone] = useState(false);
 
   return (
-    <>
+    <div className="rounded-xl border border-border bg-surface-muted px-3.5 py-3">
+      {total > 1 ? (
+        <p className="text-[11px] font-medium text-muted-foreground">
+          アイデア{circledNumbers[index] ?? `(${index + 1})`}
+        </p>
+      ) : null}
+      <p className="mt-0.5 text-sm font-semibold text-foreground">{idea.title}</p>
+      {idea.description ? (
+        <p className="mt-1 text-xs text-muted-foreground">{idea.description}</p>
+      ) : null}
+
       <button
         type="button"
         onClick={() => setOpen(true)}
         disabled={done}
-        className={`${primaryPillClass} ${done ? doneClass : secondaryDefaultClass}`}
+        className={`${primaryPillClass} mt-2.5 ${done ? doneClass : primaryDefaultClass}`}
       >
         {done ? (
           <>
             <Check className="h-3.5 w-3.5" aria-hidden />
-            アイデアを保存しました
+            保存済み
           </>
         ) : (
-          <>💡 アイデアとして保存</>
+          <>💡 このアイデアを保存</>
         )}
       </button>
 
@@ -298,6 +342,6 @@ function SingleIdeaButton({ idea }: { idea: CoachSuggestedIdea }) {
           />
         </Modal>
       ) : null}
-    </>
+    </div>
   );
 }
