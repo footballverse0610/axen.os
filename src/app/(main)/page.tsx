@@ -1,4 +1,4 @@
-import { ArrowDownRight, ArrowRight, ArrowUpRight, Sparkles } from "lucide-react";
+import { ArrowDownRight, ArrowRight, ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/Badge";
 import { Bar } from "@/components/ui/Bar";
@@ -6,10 +6,13 @@ import { Card } from "@/components/ui/Card";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { StatCard } from "@/components/ui/StatCard";
 import { StartGuideCard } from "@/components/home/StartGuideCard";
+import { CoachCharacterAvatar } from "@/components/coach/CoachCharacterAvatar";
+import { resolveCoachCharacter } from "@/lib/coach/characters";
 import { formatYen } from "@/lib/finance";
 import { stageLabel, stageTone } from "@/lib/idea-stage";
 import { priorityTone } from "@/lib/task-priority";
 import { getDashboardData } from "@/lib/supabase/dashboard";
+import { getCurrentProfile } from "@/lib/supabase/profile";
 import { calcBusinessSummary, calcGoalProgress } from "@/lib/supabase/finance";
 
 interface RecentTransaction {
@@ -22,7 +25,9 @@ interface RecentTransaction {
 }
 
 export default async function DashboardPage() {
-  const data = await getDashboardData();
+  // getCurrentProfile()はReact cache()で1リクエスト内メモ化されるため、
+  // (main)/layout.tsxで既に呼ばれている分の再取得コストは発生しない。
+  const [data, profile] = await Promise.all([getDashboardData(), getCurrentProfile()]);
 
   if (!data) {
     return (
@@ -36,6 +41,7 @@ export default async function DashboardPage() {
   }
 
   const { business, sales, expenses, openTasks, businessIdeas, activeGoals } = data;
+  const coachCharacter = resolveCoachCharacter(profile?.coach_character);
 
   const { sales: salesTotal, expenses: expensesTotal, profit, margin } = calcBusinessSummary(
     sales,
@@ -103,12 +109,10 @@ export default async function DashboardPage() {
 
       <section>
         <Card variant="primary" className="flex items-start gap-4">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-brand-accent">
-            <Sparkles className="h-5 w-5 text-white" aria-hidden />
-          </div>
+          <CoachCharacterAvatar characterId={coachCharacter.id} size="md" />
           <div className="flex-1">
             <p className="text-xs font-semibold text-primary">
-              AI Business Coach
+              {coachCharacter.name}（{coachCharacter.typeLabel}）
             </p>
             <p className="mt-1 text-sm leading-relaxed text-foreground">
               {topTask

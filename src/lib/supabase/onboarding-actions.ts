@@ -6,6 +6,7 @@ import { createClient } from "./server";
 import { getCurrentUser } from "./get-current-user";
 import { setCurrentBusinessCookie } from "./business";
 import { recalcLinkedGoals } from "./goal-sync";
+import { isCoachCharacterId } from "../coach/characters";
 import {
   BUDGET_OPTIONS,
   CHALLENGE_OPTIONS,
@@ -15,7 +16,7 @@ import {
   WEEKLY_TIME_OPTIONS,
   type StartupStage,
 } from "../onboarding-options";
-import type { BusinessStage, OnboardingWeeklyTime } from "./types";
+import type { BusinessStage, CoachCharacterId, OnboardingWeeklyTime } from "./types";
 
 export interface OnboardingInput {
   startupStage: string;
@@ -27,6 +28,7 @@ export interface OnboardingInput {
   budgetRange: string;
   goalAmount: string;
   goalPeriodMonths: string;
+  coachCharacter: string;
 }
 
 const STARTUP_STAGE_VALUES = STARTUP_STAGE_OPTIONS.map((o) => o.value);
@@ -75,6 +77,9 @@ function validateOnboardingInput(input: OnboardingInput): string | null {
   if (!WEEKLY_TIME_VALUES.includes(input.weeklyTime as OnboardingWeeklyTime)) {
     return "「起業に使える時間」を選択してください。";
   }
+  if (!isCoachCharacterId(input.coachCharacter)) {
+    return "AIコーチを選択してください。";
+  }
   if (input.budgetRange && !BUDGET_VALUES.includes(input.budgetRange)) {
     return "「初期予算」の選択内容が正しくありません。";
   }
@@ -100,7 +105,7 @@ function addMonthsIsoDate(months: number): string {
  * 初回オンボーディング(/welcome)で収集した回答を保存する。
  *
  * - profiles: onboarding_completed/current_challenges/weekly_available_time/
- *   initial_budget_range/needs_idea_help を更新
+ *   initial_budget_range/needs_idea_help/coach_character を更新
  * - businesses: 「まだアイデアがない」ユーザーも含め、必ず1件作成する
  *   (事業名が未入力でも自動的に仮の名前を割り当てる。後からいつでも
  *   settings/事業編集で変更できる)。以降のbusiness_ideas/tasks/goals等は
@@ -138,6 +143,7 @@ export async function saveOnboardingProfile(
       weekly_available_time: input.weeklyTime as OnboardingWeeklyTime,
       initial_budget_range: input.budgetRange || null,
       needs_idea_help: needsIdeaHelp,
+      coach_character: input.coachCharacter as CoachCharacterId,
     })
     .eq("id", user.id);
 

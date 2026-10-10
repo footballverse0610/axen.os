@@ -4,6 +4,12 @@ import { useState, useTransition } from "react";
 import { Check, ChevronLeft } from "lucide-react";
 import { Bar } from "@/components/ui/Bar";
 import { saveOnboardingProfile } from "@/lib/supabase/onboarding-actions";
+import { CoachCharacterAvatar } from "@/components/coach/CoachCharacterAvatar";
+import {
+  COACH_CHARACTER_LIST,
+  DEFAULT_COACH_CHARACTER_ID,
+} from "@/lib/coach/characters";
+import type { CoachCharacterId } from "@/lib/supabase/types";
 import {
   BUDGET_OPTIONS,
   CHALLENGE_OPTIONS,
@@ -22,6 +28,7 @@ type StepId =
   | "goal"
   | "time"
   | "budget"
+  | "coach"
   | "done";
 
 /** stage/budgetは「まだアイデアがない」を選ぶとスキップする(事業の詳細・予算は
@@ -42,8 +49,10 @@ function nextStepId(current: StepId, startupStage: string): StepId {
     case "goal":
       return "time";
     case "time":
-      return skipsBusinessAndBudget ? "done" : "budget";
+      return skipsBusinessAndBudget ? "coach" : "budget";
     case "budget":
+      return "coach";
+    case "coach":
       return "done";
     case "done":
       return "done";
@@ -65,8 +74,10 @@ function prevStepId(current: StepId, startupStage: string): StepId {
       return "goal";
     case "budget":
       return "time";
-    case "done":
+    case "coach":
       return skipsBusinessAndBudget ? "time" : "budget";
+    case "done":
+      return "coach";
     case "intro":
       return "intro";
   }
@@ -118,6 +129,9 @@ export function OnboardingWizard() {
   const [goalPeriodMonths, setGoalPeriodMonths] = useState("");
   const [weeklyTime, setWeeklyTime] = useState("");
   const [budgetRange, setBudgetRange] = useState("");
+  const [coachCharacter, setCoachCharacter] = useState<CoachCharacterId>(
+    DEFAULT_COACH_CHARACTER_ID,
+  );
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -126,8 +140,8 @@ export function OnboardingWizard() {
 
   const skipsBusinessAndBudget = startupStage === "idea_none";
   const countedSteps: StepId[] = skipsBusinessAndBudget
-    ? ["stage", "challenges", "goal", "time"]
-    : ["stage", "business", "challenges", "goal", "time", "budget"];
+    ? ["stage", "challenges", "goal", "time", "coach"]
+    : ["stage", "business", "challenges", "goal", "time", "budget", "coach"];
   const countedIndex = countedSteps.indexOf(stepId);
 
   function canProceed(): boolean {
@@ -146,6 +160,8 @@ export function OnboardingWizard() {
       case "time":
         return weeklyTime !== "";
       case "budget":
+        return true;
+      case "coach":
         return true;
       case "done":
         return true;
@@ -188,6 +204,7 @@ export function OnboardingWizard() {
           budgetRange,
           goalAmount,
           goalPeriodMonths,
+          coachCharacter,
         });
         // 成功時はsaveOnboardingProfile内でredirect("/")される。
         // ここに到達するのはエラー時のみ。
@@ -417,6 +434,47 @@ export function OnboardingWizard() {
                 onClick={() => setBudgetRange((prev) => (prev === option ? "" : option))}
               />
             ))}
+          </fieldset>
+        ) : null}
+
+        {stepId === "coach" ? (
+          <fieldset className="flex flex-col gap-3">
+            <legend className="mb-1 text-base font-semibold text-foreground">
+              AIコーチを選んでください
+            </legend>
+            <p className="mb-1 text-xs text-muted-foreground">
+              あとから設定画面でいつでも変更できます。
+            </p>
+            {COACH_CHARACTER_LIST.map((character) => {
+              const selected = coachCharacter === character.id;
+              return (
+                <button
+                  key={character.id}
+                  type="button"
+                  onClick={() => setCoachCharacter(character.id)}
+                  aria-pressed={selected}
+                  className={`flex items-start gap-3 rounded-2xl border px-4 py-3.5 text-left transition-colors ${
+                    selected
+                      ? "border-primary bg-primary/5"
+                      : "border-border bg-surface hover:bg-surface-muted"
+                  }`}
+                >
+                  <CoachCharacterAvatar characterId={character.id} size="md" />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-semibold text-foreground">{character.name}</p>
+                      <span className="text-xs text-muted-foreground">{character.typeLabel}</span>
+                      {selected ? (
+                        <Check className="ml-auto h-4 w-4 shrink-0 text-primary" aria-hidden />
+                      ) : null}
+                    </div>
+                    <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                      {character.description}
+                    </p>
+                  </div>
+                </button>
+              );
+            })}
           </fieldset>
         ) : null}
 

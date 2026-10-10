@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { ArrowDown, Send, Sparkles } from "lucide-react";
+import { ArrowDown, Send } from "lucide-react";
 import { suggestedPrompts } from "@/lib/mock-data";
 import { ActionSuggestions } from "@/components/coach/ActionSuggestions";
+import { CoachCharacterAvatar } from "@/components/coach/CoachCharacterAvatar";
+import { resolveCoachCharacter } from "@/lib/coach/characters";
 import {
   computeStreamingDisplayText,
   EMPTY_COACH_ACTIONS,
@@ -11,13 +13,21 @@ import {
   splitCoachStreamText,
   type CoachActions,
 } from "@/lib/coach/actions-schema";
-import type { CoachMessage } from "@/lib/supabase/types";
+import type { CoachCharacterId, CoachMessage } from "@/lib/supabase/types";
 
 /** stateを持つ側でのみ使う型。propsを増やしすぎないよう最小限にする。 */
 interface CoachChatProps {
   initialMessages: CoachMessage[];
   /** start-guide等から遷移した際に、入力欄へあらかじめ入れておく文章(自動送信はしない)。 */
   initialInput?: string;
+  /**
+   * 選択中のAIコーチ。サーバー側(coach/page.tsx)で既に
+   * resolveCoachCharacter()により有効な値へ解決済みのIDのみを渡す
+   * (キャラクター定義のfallbackIconはReactコンポーネント参照のため、
+   * Server ComponentからはこのIDのみを渡し、定義自体はこのコンポーネント内で
+   * 解決する)。
+   */
+  coachCharacterId: CoachCharacterId;
 }
 
 interface ChatMessage {
@@ -32,7 +42,8 @@ function toChatMessage(message: CoachMessage): ChatMessage {
   return { id: message.id, role: message.role, content: message.content };
 }
 
-export function CoachChat({ initialMessages, initialInput }: CoachChatProps) {
+export function CoachChat({ initialMessages, initialInput, coachCharacterId }: CoachChatProps) {
+  const character = resolveCoachCharacter(coachCharacterId);
   const [messages, setMessages] = useState<ChatMessage[]>(
     initialMessages.map(toChatMessage),
   );
@@ -171,11 +182,11 @@ export function CoachChat({ initialMessages, initialInput }: CoachChatProps) {
   return (
     <div className="flex flex-col gap-5">
       <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-brand-accent shadow-[var(--shadow-card-primary)]">
-          <Sparkles className="h-5 w-5 text-white" aria-hidden />
-        </div>
+        <CoachCharacterAvatar characterId={character.id} size="md" />
         <div>
-          <p className="text-sm font-semibold text-foreground">AI Business Coach</p>
+          <p className="text-sm font-semibold text-foreground">
+            {character.name}（{character.typeLabel}）
+          </p>
           <p className="text-xs text-muted-foreground">
             事業の状況を踏まえてアドバイスします(1日20メッセージまで)
           </p>

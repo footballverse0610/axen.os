@@ -1,6 +1,8 @@
 import { CoachChat } from "@/components/coach/CoachChat";
+import { resolveCoachCharacter } from "@/lib/coach/characters";
 import { getCurrentBusiness } from "@/lib/supabase/business";
 import { getCoachMessages } from "@/lib/supabase/coach-messages";
+import { getCurrentProfile } from "@/lib/supabase/profile";
 
 export default async function CoachPage({
   searchParams,
@@ -8,8 +10,14 @@ export default async function CoachPage({
   searchParams: Promise<{ prompt?: string }>;
 }) {
   const business = await getCurrentBusiness();
-  const initialMessages = business ? await getCoachMessages(business.id) : [];
+  // getCurrentProfile()はReact cache()で1リクエスト内メモ化されるため、
+  // (main)/layout.tsxで既に呼ばれている分の再取得コストは発生しない。
+  const [initialMessages, profile] = await Promise.all([
+    business ? getCoachMessages(business.id) : Promise.resolve([]),
+    getCurrentProfile(),
+  ]);
   const { prompt } = await searchParams;
+  const coachCharacterId = resolveCoachCharacter(profile?.coach_character).id;
 
   if (!business) {
     return (
@@ -27,6 +35,11 @@ export default async function CoachPage({
   // 別事業の履歴へ確実に入れ替えるため、business.id が変わったら
   // コンポーネントごと再マウントさせる。
   return (
-    <CoachChat key={business.id} initialMessages={initialMessages} initialInput={prompt} />
+    <CoachChat
+      key={business.id}
+      initialMessages={initialMessages}
+      initialInput={prompt}
+      coachCharacterId={coachCharacterId}
+    />
   );
 }

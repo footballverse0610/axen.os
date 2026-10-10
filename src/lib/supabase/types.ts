@@ -6,6 +6,9 @@
 /** オンボーディングQ5「起業に使える時間」(週あたり)。 */
 export type OnboardingWeeklyTime = "under_5h" | "5_15h" | "15_30h" | "over_30h";
 
+/** 選択可能なAIコーチの性格(4種)。表示名・説明文はsrc/lib/coach/characters.tsで管理する。 */
+export type CoachCharacterId = "sou" | "leo" | "gaku" | "riku";
+
 export interface Profile {
   id: string;
   display_name: string | null;
@@ -25,6 +28,8 @@ export interface Profile {
   notifications_enabled: boolean;
   /** 通知を送る時刻("HH:MM:SS"、端末ローカル時刻)。 */
   notification_time: string;
+  /** 選択中のAIコーチの性格。DB側がNOT NULL+DEFAULTのため常に値を持つ。 */
+  coach_character: CoachCharacterId;
   created_at: string;
   updated_at: string;
 }

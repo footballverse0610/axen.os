@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/Card";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { AdBanner } from "@/components/capacitor/AdBanner";
 import { ChangePasswordForm } from "@/components/settings/ChangePasswordForm";
+import { CoachCharacterForm } from "@/components/settings/CoachCharacterForm";
 import { DeleteAccountButton } from "@/components/settings/DeleteAccountButton";
 import { LogoutButton } from "@/components/settings/LogoutButton";
 import { NotificationSettingsForm } from "@/components/settings/NotificationSettingsForm";
@@ -58,6 +59,13 @@ export default async function SettingsPage({
         <SectionHeader title="テーマ" />
         <Card>
           <ThemeToggle />
+        </Card>
+      </section>
+
+      <section>
+        <SectionHeader title="AIコーチ" />
+        <Card>
+          <CoachCharacterForm profile={profile} />
         </Card>
       </section>
 

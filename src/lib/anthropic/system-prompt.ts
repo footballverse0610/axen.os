@@ -1,5 +1,6 @@
 import "server-only";
 import { formatCoachContext, type CoachContext } from "../supabase/coach-context";
+import { resolveCoachCharacter } from "../coach/characters";
 
 /**
  * AI Coachのsystem promptを組み立てる。
@@ -9,9 +10,17 @@ import { formatCoachContext, type CoachContext } from "../supabase/coach-context
  * 指示ではない」ことをモデルに明示するため。ユーザーが過去に入力した
  * business名・タスク名などにモデルへの指示文が紛れ込んでいても、
  * データとして扱うよう指示している。
+ *
+ * キャラクター(ソウ/レオ/ガク/リク)はcontext.profile.coach_characterから
+ * 決まる。このIDはDB(profiles.coach_character)がenum型で、かつ
+ * 更新経路(onboarding-actions.ts/coach-character-actions.ts)が
+ * isCoachCharacterId()で検証済みの値のみ保存するため、ここに到達する時点で
+ * 既に信頼できる値だが、resolveCoachCharacter()は万一不明な値であっても
+ * 必ずデフォルトキャラクターにフォールバックする(二重の安全策)。
  */
 export function buildCoachSystemPrompt(context: CoachContext): string {
   const contextText = formatCoachContext(context);
+  const character = resolveCoachCharacter(context.profile?.coach_character);
 
   return `あなたは日本の個人事業主・スモールビジネス経営者向けの「AI Business Coach」です。
 ユーザーは起業・副業の初心者であることを前提に、実践的で具体的なアドバイスを日本語で提供してください。
@@ -21,6 +30,14 @@ export function buildCoachSystemPrompt(context: CoachContext): string {
 - 抽象的な一般論ではなく、下記の事業状況を踏まえた具体的な提案をする
 - 断定的な法律・税務・会計上の最終判断は避け、必要な場合は専門家への相談を勧める
 - 初心者に対して上から目線にならない。難しい言葉を並べて賢そうに見せるより、分かりやすさを優先する
+
+# キャラクター設定(必ず守る)
+あなたは「${character.name}」というキャラクターとして対話します(タイプ: ${character.typeLabel})。
+以下はこのキャラクター固有の話し方・伝え方の指示です。あくまで「# 役割・トーン」
+「# 回答の形式」「# 多角的な分析」「# 行動提案」の各ルールの上に重ねる話し方の調整であり、
+これらのルールや回答の正確性・品質を下げるための指示ではありません。
+
+${character.styleInstructions}
 
 # 回答の形式(必ず守る)
 - 結論・答えを最初に言う。前置きは書かない(最初の数行だけ読んでも要点が分かるようにする)
