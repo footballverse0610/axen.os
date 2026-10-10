@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef, useState, type FormEvent } from "react";
-import { Send, Sparkles } from "lucide-react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { ArrowDown, Send, Sparkles } from "lucide-react";
 import { suggestedPrompts } from "@/lib/mock-data";
 import { ActionSuggestions } from "@/components/coach/ActionSuggestions";
 import {
@@ -40,6 +40,44 @@ export function CoachChat({ initialMessages, initialInput }: CoachChatProps) {
   const [isSending, setIsSending] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const scrollAnchorRef = useRef<HTMLDivElement>(null);
+  // チャット全体はこのページ自身(window)がスクロールする設計で、専用の
+  // overflow-y-autoコンテナは持たない(既存のsticky入力欄と同じ前提)。
+  // そのため「最下部にいるか」もwindowのスクロール位置から判定する。
+  const [isAtBottom, setIsAtBottom] = useState(true);
+  // ストリーミング中に毎チャンクで参照する値のため、再レンダーを待たず
+  // 即時に読めるrefで持つ(setState由来のstateは次の描画まで古い値になる)。
+  const isAtBottomRef = useRef(true);
+
+  useEffect(() => {
+    // スクロール位置の多少のずれ(モバイルSafariのアドレスバー表示変化等)を
+    // 許容するための閾値。0にすると数px残っただけでボタンが出てしまう。
+    const BOTTOM_THRESHOLD_PX = 120;
+
+    function updateIsAtBottom() {
+      const atBottom =
+        window.innerHeight + window.scrollY >=
+        document.documentElement.scrollHeight - BOTTOM_THRESHOLD_PX;
+      isAtBottomRef.current = atBottom;
+      setIsAtBottom(atBottom);
+    }
+
+    updateIsAtBottom();
+    window.addEventListener("scroll", updateIsAtBottom, { passive: true });
+    window.addEventListener("resize", updateIsAtBottom);
+    return () => {
+      window.removeEventListener("scroll", updateIsAtBottom);
+      window.removeEventListener("resize", updateIsAtBottom);
+    };
+  }, []);
+
+  function scrollToBottom(behavior: ScrollBehavior = "smooth") {
+    scrollAnchorRef.current?.scrollIntoView({ behavior, block: "end" });
+    // プログラムによるスクロールの結果を待たずに「最下部にいる」ことを
+    // 即時確定させる。ストリーミング中の追従判定(isAtBottomRef)に
+    // すぐ反映させるため。
+    isAtBottomRef.current = true;
+    setIsAtBottom(true);
+  }
 
   async function sendMessage(text: string) {
     const trimmed = text.trim();
@@ -56,6 +94,9 @@ export function CoachChat({ initialMessages, initialInput }: CoachChatProps) {
     };
     const coachMessageId = `local-coach-${Date.now()}`;
     setMessages((prev) => [...prev, userMessage, { id: coachMessageId, role: "coach", content: "" }]);
+    // 送信は常にユーザー自身の操作なので、過去のメッセージを読んでいた
+    // 場合でも、既存のチャットアプリと同様に最下部へ移動させる。
+    scrollToBottom();
 
     try {
       const res = await fetch("/api/coach", {
@@ -94,7 +135,12 @@ export function CoachChat({ initialMessages, initialInput }: CoachChatProps) {
         setMessages((prev) =>
           prev.map((m) => (m.id === coachMessageId ? { ...m, content: displayText } : m)),
         );
-        scrollAnchorRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+        // ユーザーが最下部付近にいる場合のみ追従する。過去のメッセージを
+        // 読んでいる途中であれば、ストリーミングで本文が伸びても
+        // スクロール位置を勝手に動かさない。
+        if (isAtBottomRef.current) {
+          scrollAnchorRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+        }
       }
 
       const { displayText, actionsJson } = splitCoachStreamText(raw);
@@ -197,6 +243,19 @@ export function CoachChat({ initialMessages, initialInput }: CoachChatProps) {
           </button>
         ))}
       </div>
+
+      {!isAtBottom ? (
+        <div className="sticky bottom-36 z-10 flex justify-end md:bottom-20">
+          <button
+            type="button"
+            onClick={() => scrollToBottom()}
+            aria-label="最新のメッセージへ移動"
+            className="flex h-11 w-11 items-center justify-center rounded-full border border-border bg-surface text-foreground shadow-[var(--shadow-card)] transition-colors hover:bg-surface-muted"
+          >
+            <ArrowDown className="h-5 w-5" aria-hidden />
+          </button>
+        </div>
+      ) : null}
 
       <form
         onSubmit={handleSubmit}
